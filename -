@@ -1,0 +1,1863 @@
+{
+  "season": 2025,
+  "source": "espn-public-api",
+  "generatedAt": "2026-08-04T05:33:53.792Z",
+  "weekMapping": {
+    "0": "ESPN regular week 1",
+    "1": "ESPN regular week 2",
+    "2": "ESPN regular week 3",
+    "3": "ESPN regular week 4",
+    "4": "ESPN regular week 5",
+    "5": "ESPN regular week 6",
+    "6": "ESPN regular week 7",
+    "7": "ESPN regular week 8",
+    "8": "ESPN regular week 9",
+    "9": "ESPN regular week 10",
+    "10": "ESPN regular week 11",
+    "11": "ESPN regular week 12",
+    "12": "ESPN regular week 13",
+    "13": "ESPN regular week 14",
+    "14": "ESPN regular week 15",
+    "15": "ESPN regular week 16",
+    "16": "ESPN postseason events before 2025-12-22",
+    "17": "ESPN postseason events on/after 2025-12-22"
+  },
+  "weekSummaries": {
+    "0": [
+      {
+        "managerKey": "michael-carey",
+        "weeklyPoints": 7,
+        "weeklyWins": 3,
+        "weeklyLosses": 3,
+        "weeklyPushes": 0,
+        "weeklyAtsWins": 4,
+        "weeklyAtsLosses": 2,
+        "weeklyAtsPushes": 0
+      },
+      {
+        "managerKey": "noah-corwin",
+        "weeklyPoints": 10,
+        "weeklyWins": 4,
+        "weeklyLosses": 4,
+        "weeklyPushes": 0,
+        "weeklyAtsWins": 6,
+        "weeklyAtsLosses": 2,
+        "weeklyAtsPushes": 0
+      },
+      {
+        "managerKey": "sally-ehrmann",
+        "weeklyPoints": 7,
+        "weeklyWins": 4,
+        "weeklyLosses": 4,
+        "weeklyPushes": 0,
+        "weeklyAtsWins": 3,
+        "weeklyAtsLosses": 5,
+        "weeklyAtsPushes": 0
+      },
+      {
+        "managerKey": "megan-corwin",
+        "weeklyPoints": 14.5,
+        "weeklyWins": 10,
+        "weeklyLosses": 3,
+        "weeklyPushes": 0,
+        "weeklyAtsWins": 4,
+        "weeklyAtsLosses": 8,
+        "weeklyAtsPushes": 1
+      },
+      {
+        "managerKey": "michael-miller",
+        "weeklyPoints": 9,
+        "weeklyWins": 5,
+        "weeklyLosses": 2,
+        "weeklyPushes": 0,
+        "weeklyAtsWins": 4,
+        "weeklyAtsLosses": 3,
+        "weeklyAtsPushes": 0
+      },
+      {
+        "managerKey": "nicky-abbs",
+        "weeklyPoints": 8,
+        "weeklyWins": 5,
+        "weeklyLosses": 3,
+        "weeklyPushes": 0,
+        "weeklyAtsWins": 3,
+        "weeklyAtsLosses": 5,
+        "weeklyAtsPushes": 0
+      },
+      {
+        "managerKey": "maddie-negaard",
+        "weeklyPoints": 10,
+        "weeklyWins": 6,
+        "weeklyLosses": 2,
+        "weeklyPushes": 0,
+        "weeklyAtsWins": 4,
+        "weeklyAtsLosses": 4,
+        "weeklyAtsPushes": 0
+      },
+      {
+        "managerKey": "danny-chryst",
+        "weeklyPoints": 9,
+        "weeklyWins": 7,
+        "weeklyLosses": 0,
+        "weeklyPushes": 0,
+        "weeklyAtsWins": 2,
+        "weeklyAtsLosses": 5,
+        "weeklyAtsPushes": 0
+      },
+      {
+        "managerKey": "tom-stamatakos",
+        "weeklyPoints": 13,
+        "weeklyWins": 7,
+        "weeklyLosses": 2,
+        "weeklyPushes": 0,
+        "weeklyAtsWins": 6,
+        "weeklyAtsLosses": 3,
+        "weeklyAtsPushes": 0
+      },
+      {
+        "managerKey": "joe-moeller",
+        "weeklyPoints": 12,
+        "weeklyWins": 7,
+        "weeklyLosses": 0,
+        "weeklyPushes": 0,
+        "weeklyAtsWins": 5,
+        "weeklyAtsLosses": 2,
+        "weeklyAtsPushes": 0
+      }
+    ],
+    "1": [
+      {
+        "managerKey": "michael-carey",
+        "weeklyPoints": 7,
+        "weeklyWins": 5,
+        "weeklyLosses": 1,
+        "weeklyPushes": 0,
+        "weeklyAtsWins": 2,
+        "weeklyAtsLosses": 4,
+        "weeklyAtsPushes": 0
+      },
+      {
+        "managerKey": "noah-corwin",
+        "weeklyPoints": 8,
+        "weeklyWins": 5,
+        "weeklyLosses": 2,
+        "weeklyPushes": 0,
+        "weeklyAtsWins": 3,
+        "weeklyAtsLosses": 4,
+        "weeklyAtsPushes": 0
+      },
+      {
+        "managerKey": "sally-ehrmann",
+        "weeklyPoints": 11,
+        "weeklyWins": 7,
+        "weeklyLosses": 0,
+        "weeklyPushes": 0,
+        "weeklyAtsWins": 4,
+        "weeklyAtsLosses": 3,
+        "weeklyAtsPushes": 0
+      },
+      {
+        "managerKey": "megan-corwin",
+        "weeklyPoints": 12,
+        "weeklyWins": 8,
+        "weeklyLosses": 1,
+        "weeklyPushes": 0,
+        "weeklyAtsWins": 4,
+        "weeklyAtsLosses": 5,
+        "weeklyAtsPushes": 0
+      },
+      {
+        "managerKey": "michael-miller",
+        "weeklyPoints": 11,
+        "weeklyWins": 6,
+        "weeklyLosses": 1,
+        "weeklyPushes": 0,
+        "weeklyAtsWins": 5,
+        "weeklyAtsLosses": 2,
+        "weeklyAtsPushes": 0
+      },
+      {
+        "managerKey": "nicky-abbs",
+        "weeklyPoints": 8,
+        "weeklyWins": 4,
+        "weeklyLosses": 3,
+        "weeklyPushes": 0,
+        "weeklyAtsWins": 4,
+        "weeklyAtsLosses": 3,
+        "weeklyAtsPushes": 0
+      },
+      {
+        "managerKey": "maddie-negaard",
+        "weeklyPoints": 12,
+        "weeklyWins": 7,
+        "weeklyLosses": 1,
+        "weeklyPushes": 0,
+        "weeklyAtsWins": 5,
+        "weeklyAtsLosses": 3,
+        "weeklyAtsPushes": 0
+      },
+      {
+        "managerKey": "danny-chryst",
+        "weeklyPoints": 11,
+        "weeklyWins": 7,
+        "weeklyLosses": 1,
+        "weeklyPushes": 0,
+        "weeklyAtsWins": 4,
+        "weeklyAtsLosses": 4,
+        "weeklyAtsPushes": 0
+      },
+      {
+        "managerKey": "tom-stamatakos",
+        "weeklyPoints": 9,
+        "weeklyWins": 6,
+        "weeklyLosses": 3,
+        "weeklyPushes": 0,
+        "weeklyAtsWins": 3,
+        "weeklyAtsLosses": 6,
+        "weeklyAtsPushes": 0
+      },
+      {
+        "managerKey": "joe-moeller",
+        "weeklyPoints": 7,
+        "weeklyWins": 3,
+        "weeklyLosses": 3,
+        "weeklyPushes": 0,
+        "weeklyAtsWins": 4,
+        "weeklyAtsLosses": 2,
+        "weeklyAtsPushes": 0
+      }
+    ],
+    "2": [
+      {
+        "managerKey": "michael-carey",
+        "weeklyPoints": 8,
+        "weeklyWins": 5,
+        "weeklyLosses": 1,
+        "weeklyPushes": 0,
+        "weeklyAtsWins": 3,
+        "weeklyAtsLosses": 3,
+        "weeklyAtsPushes": 0
+      },
+      {
+        "managerKey": "noah-corwin",
+        "weeklyPoints": 7,
+        "weeklyWins": 4,
+        "weeklyLosses": 3,
+        "weeklyPushes": 0,
+        "weeklyAtsWins": 3,
+        "weeklyAtsLosses": 4,
+        "weeklyAtsPushes": 0
+      },
+      {
+        "managerKey": "sally-ehrmann",
+        "weeklyPoints": 6,
+        "weeklyWins": 3,
+        "weeklyLosses": 5,
+        "weeklyPushes": 0,
+        "weeklyAtsWins": 3,
+        "weeklyAtsLosses": 5,
+        "weeklyAtsPushes": 0
+      },
+      {
+        "managerKey": "megan-corwin",
+        "weeklyPoints": 6,
+        "weeklyWins": 5,
+        "weeklyLosses": 3,
+        "weeklyPushes": 0,
+        "weeklyAtsWins": 1,
+        "weeklyAtsLosses": 7,
+        "weeklyAtsPushes": 0
+      },
+      {
+        "managerKey": "michael-miller",
+        "weeklyPoints": 9,
+        "weeklyWins": 5,
+        "weeklyLosses": 0,
+        "weeklyPushes": 0,
+        "weeklyAtsWins": 4,
+        "weeklyAtsLosses": 1,
+        "weeklyAtsPushes": 0
+      },
+      {
+        "managerKey": "nicky-abbs",
+        "weeklyPoints": 7,
+        "weeklyWins": 4,
+        "weeklyLosses": 2,
+        "weeklyPushes": 0,
+        "weeklyAtsWins": 3,
+        "weeklyAtsLosses": 3,
+        "weeklyAtsPushes": 0
+      },
+      {
+        "managerKey": "maddie-negaard",
+        "weeklyPoints": 10,
+        "weeklyWins": 6,
+        "weeklyLosses": 1,
+        "weeklyPushes": 0,
+        "weeklyAtsWins": 4,
+        "weeklyAtsLosses": 3,
+        "weeklyAtsPushes": 0
+      },
+      {
+        "managerKey": "danny-chryst",
+        "weeklyPoints": 10,
+        "weeklyWins": 5,
+        "weeklyLosses": 3,
+        "weeklyPushes": 0,
+        "weeklyAtsWins": 5,
+        "weeklyAtsLosses": 3,
+        "weeklyAtsPushes": 0
+      },
+      {
+        "managerKey": "tom-stamatakos",
+        "weeklyPoints": 13,
+        "weeklyWins": 8,
+        "weeklyLosses": 0,
+        "weeklyPushes": 0,
+        "weeklyAtsWins": 5,
+        "weeklyAtsLosses": 3,
+        "weeklyAtsPushes": 0
+      },
+      {
+        "managerKey": "joe-moeller",
+        "weeklyPoints": 12,
+        "weeklyWins": 7,
+        "weeklyLosses": 0,
+        "weeklyPushes": 0,
+        "weeklyAtsWins": 5,
+        "weeklyAtsLosses": 2,
+        "weeklyAtsPushes": 0
+      }
+    ],
+    "3": [
+      {
+        "managerKey": "michael-carey",
+        "weeklyPoints": 3,
+        "weeklyWins": 2,
+        "weeklyLosses": 3,
+        "weeklyPushes": 0,
+        "weeklyAtsWins": 1,
+        "weeklyAtsLosses": 4,
+        "weeklyAtsPushes": 0
+      },
+      {
+        "managerKey": "noah-corwin",
+        "weeklyPoints": 6,
+        "weeklyWins": 3,
+        "weeklyLosses": 4,
+        "weeklyPushes": 0,
+        "weeklyAtsWins": 3,
+        "weeklyAtsLosses": 4,
+        "weeklyAtsPushes": 0
+      },
+      {
+        "managerKey": "sally-ehrmann",
+        "weeklyPoints": 7,
+        "weeklyWins": 3,
+        "weeklyLosses": 4,
+        "weeklyPushes": 0,
+        "weeklyAtsWins": 4,
+        "weeklyAtsLosses": 3,
+        "weeklyAtsPushes": 0
+      },
+      {
+        "managerKey": "megan-corwin",
+        "weeklyPoints": 6,
+        "weeklyWins": 3,
+        "weeklyLosses": 4,
+        "weeklyPushes": 0,
+        "weeklyAtsWins": 3,
+        "weeklyAtsLosses": 4,
+        "weeklyAtsPushes": 0
+      },
+      {
+        "managerKey": "michael-miller",
+        "weeklyPoints": 5,
+        "weeklyWins": 4,
+        "weeklyLosses": 1,
+        "weeklyPushes": 0,
+        "weeklyAtsWins": 1,
+        "weeklyAtsLosses": 4,
+        "weeklyAtsPushes": 0
+      },
+      {
+        "managerKey": "nicky-abbs",
+        "weeklyPoints": 5,
+        "weeklyWins": 3,
+        "weeklyLosses": 2,
+        "weeklyPushes": 0,
+        "weeklyAtsWins": 2,
+        "weeklyAtsLosses": 3,
+        "weeklyAtsPushes": 0
+      },
+      {
+        "managerKey": "maddie-negaard",
+        "weeklyPoints": 9,
+        "weeklyWins": 5,
+        "weeklyLosses": 1,
+        "weeklyPushes": 0,
+        "weeklyAtsWins": 4,
+        "weeklyAtsLosses": 2,
+        "weeklyAtsPushes": 0
+      },
+      {
+        "managerKey": "danny-chryst",
+        "weeklyPoints": 10,
+        "weeklyWins": 5,
+        "weeklyLosses": 2,
+        "weeklyPushes": 0,
+        "weeklyAtsWins": 5,
+        "weeklyAtsLosses": 2,
+        "weeklyAtsPushes": 0
+      },
+      {
+        "managerKey": "tom-stamatakos",
+        "weeklyPoints": 11,
+        "weeklyWins": 6,
+        "weeklyLosses": 3,
+        "weeklyPushes": 0,
+        "weeklyAtsWins": 5,
+        "weeklyAtsLosses": 4,
+        "weeklyAtsPushes": 0
+      },
+      {
+        "managerKey": "joe-moeller",
+        "weeklyPoints": 12,
+        "weeklyWins": 6,
+        "weeklyLosses": 1,
+        "weeklyPushes": 0,
+        "weeklyAtsWins": 6,
+        "weeklyAtsLosses": 1,
+        "weeklyAtsPushes": 0
+      }
+    ],
+    "4": [
+      {
+        "managerKey": "michael-carey",
+        "weeklyPoints": 6,
+        "weeklyWins": 4,
+        "weeklyLosses": 2,
+        "weeklyPushes": 0,
+        "weeklyAtsWins": 2,
+        "weeklyAtsLosses": 4,
+        "weeklyAtsPushes": 0
+      },
+      {
+        "managerKey": "noah-corwin",
+        "weeklyPoints": 8,
+        "weeklyWins": 4,
+        "weeklyLosses": 3,
+        "weeklyPushes": 0,
+        "weeklyAtsWins": 4,
+        "weeklyAtsLosses": 3,
+        "weeklyAtsPushes": 0
+      },
+      {
+        "managerKey": "sally-ehrmann",
+        "weeklyPoints": 9,
+        "weeklyWins": 5,
+        "weeklyLosses": 1,
+        "weeklyPushes": 0,
+        "weeklyAtsWins": 4,
+        "weeklyAtsLosses": 2,
+        "weeklyAtsPushes": 0
+      },
+      {
+        "managerKey": "megan-corwin",
+        "weeklyPoints": 5,
+        "weeklyWins": 3,
+        "weeklyLosses": 4,
+        "weeklyPushes": 0,
+        "weeklyAtsWins": 2,
+        "weeklyAtsLosses": 5,
+        "weeklyAtsPushes": 0
+      },
+      {
+        "managerKey": "michael-miller",
+        "weeklyPoints": 7,
+        "weeklyWins": 4,
+        "weeklyLosses": 2,
+        "weeklyPushes": 0,
+        "weeklyAtsWins": 3,
+        "weeklyAtsLosses": 3,
+        "weeklyAtsPushes": 0
+      },
+      {
+        "managerKey": "nicky-abbs",
+        "weeklyPoints": 6,
+        "weeklyWins": 4,
+        "weeklyLosses": 3,
+        "weeklyPushes": 0,
+        "weeklyAtsWins": 2,
+        "weeklyAtsLosses": 5,
+        "weeklyAtsPushes": 0
+      },
+      {
+        "managerKey": "maddie-negaard",
+        "weeklyPoints": 6,
+        "weeklyWins": 4,
+        "weeklyLosses": 2,
+        "weeklyPushes": 0,
+        "weeklyAtsWins": 2,
+        "weeklyAtsLosses": 4,
+        "weeklyAtsPushes": 0
+      },
+      {
+        "managerKey": "danny-chryst",
+        "weeklyPoints": 6,
+        "weeklyWins": 3,
+        "weeklyLosses": 1,
+        "weeklyPushes": 0,
+        "weeklyAtsWins": 3,
+        "weeklyAtsLosses": 1,
+        "weeklyAtsPushes": 0
+      },
+      {
+        "managerKey": "tom-stamatakos",
+        "weeklyPoints": 17,
+        "weeklyWins": 9,
+        "weeklyLosses": 1,
+        "weeklyPushes": 0,
+        "weeklyAtsWins": 8,
+        "weeklyAtsLosses": 2,
+        "weeklyAtsPushes": 0
+      },
+      {
+        "managerKey": "joe-moeller",
+        "weeklyPoints": 6,
+        "weeklyWins": 4,
+        "weeklyLosses": 2,
+        "weeklyPushes": 0,
+        "weeklyAtsWins": 2,
+        "weeklyAtsLosses": 4,
+        "weeklyAtsPushes": 0
+      }
+    ],
+    "5": [
+      {
+        "managerKey": "michael-carey",
+        "weeklyPoints": 6,
+        "weeklyWins": 4,
+        "weeklyLosses": 1,
+        "weeklyPushes": 0,
+        "weeklyAtsWins": 2,
+        "weeklyAtsLosses": 3,
+        "weeklyAtsPushes": 0
+      },
+      {
+        "managerKey": "noah-corwin",
+        "weeklyPoints": 9,
+        "weeklyWins": 4,
+        "weeklyLosses": 1,
+        "weeklyPushes": 0,
+        "weeklyAtsWins": 5,
+        "weeklyAtsLosses": 0,
+        "weeklyAtsPushes": 0
+      },
+      {
+        "managerKey": "sally-ehrmann",
+        "weeklyPoints": 6,
+        "weeklyWins": 3,
+        "weeklyLosses": 3,
+        "weeklyPushes": 0,
+        "weeklyAtsWins": 3,
+        "weeklyAtsLosses": 3,
+        "weeklyAtsPushes": 0
+      },
+      {
+        "managerKey": "megan-corwin",
+        "weeklyPoints": 9,
+        "weeklyWins": 5,
+        "weeklyLosses": 5,
+        "weeklyPushes": 0,
+        "weeklyAtsWins": 4,
+        "weeklyAtsLosses": 6,
+        "weeklyAtsPushes": 0
+      },
+      {
+        "managerKey": "michael-miller",
+        "weeklyPoints": 3,
+        "weeklyWins": 2,
+        "weeklyLosses": 3,
+        "weeklyPushes": 0,
+        "weeklyAtsWins": 1,
+        "weeklyAtsLosses": 4,
+        "weeklyAtsPushes": 0
+      },
+      {
+        "managerKey": "nicky-abbs",
+        "weeklyPoints": 8,
+        "weeklyWins": 5,
+        "weeklyLosses": 2,
+        "weeklyPushes": 0,
+        "weeklyAtsWins": 3,
+        "weeklyAtsLosses": 4,
+        "weeklyAtsPushes": 0
+      },
+      {
+        "managerKey": "maddie-negaard",
+        "weeklyPoints": 8,
+        "weeklyWins": 4,
+        "weeklyLosses": 2,
+        "weeklyPushes": 0,
+        "weeklyAtsWins": 4,
+        "weeklyAtsLosses": 2,
+        "weeklyAtsPushes": 0
+      },
+      {
+        "managerKey": "danny-chryst",
+        "weeklyPoints": 9,
+        "weeklyWins": 6,
+        "weeklyLosses": 1,
+        "weeklyPushes": 0,
+        "weeklyAtsWins": 3,
+        "weeklyAtsLosses": 4,
+        "weeklyAtsPushes": 0
+      },
+      {
+        "managerKey": "tom-stamatakos",
+        "weeklyPoints": 7,
+        "weeklyWins": 5,
+        "weeklyLosses": 2,
+        "weeklyPushes": 0,
+        "weeklyAtsWins": 2,
+        "weeklyAtsLosses": 5,
+        "weeklyAtsPushes": 0
+      },
+      {
+        "managerKey": "joe-moeller",
+        "weeklyPoints": 5,
+        "weeklyWins": 3,
+        "weeklyLosses": 0,
+        "weeklyPushes": 0,
+        "weeklyAtsWins": 2,
+        "weeklyAtsLosses": 1,
+        "weeklyAtsPushes": 0
+      }
+    ],
+    "6": [
+      {
+        "managerKey": "michael-carey",
+        "weeklyPoints": 4,
+        "weeklyWins": 2,
+        "weeklyLosses": 3,
+        "weeklyPushes": 0,
+        "weeklyAtsWins": 2,
+        "weeklyAtsLosses": 3,
+        "weeklyAtsPushes": 0
+      },
+      {
+        "managerKey": "noah-corwin",
+        "weeklyPoints": 9,
+        "weeklyWins": 5,
+        "weeklyLosses": 2,
+        "weeklyPushes": 0,
+        "weeklyAtsWins": 4,
+        "weeklyAtsLosses": 3,
+        "weeklyAtsPushes": 0
+      },
+      {
+        "managerKey": "sally-ehrmann",
+        "weeklyPoints": 7,
+        "weeklyWins": 3,
+        "weeklyLosses": 4,
+        "weeklyPushes": 0,
+        "weeklyAtsWins": 4,
+        "weeklyAtsLosses": 3,
+        "weeklyAtsPushes": 0
+      },
+      {
+        "managerKey": "megan-corwin",
+        "weeklyPoints": 11,
+        "weeklyWins": 7,
+        "weeklyLosses": 2,
+        "weeklyPushes": 0,
+        "weeklyAtsWins": 4,
+        "weeklyAtsLosses": 5,
+        "weeklyAtsPushes": 0
+      },
+      {
+        "managerKey": "michael-miller",
+        "weeklyPoints": 11,
+        "weeklyWins": 6,
+        "weeklyLosses": 0,
+        "weeklyPushes": 0,
+        "weeklyAtsWins": 5,
+        "weeklyAtsLosses": 1,
+        "weeklyAtsPushes": 0
+      },
+      {
+        "managerKey": "nicky-abbs",
+        "weeklyPoints": 5,
+        "weeklyWins": 3,
+        "weeklyLosses": 1,
+        "weeklyPushes": 0,
+        "weeklyAtsWins": 2,
+        "weeklyAtsLosses": 2,
+        "weeklyAtsPushes": 0
+      },
+      {
+        "managerKey": "maddie-negaard",
+        "weeklyPoints": 10,
+        "weeklyWins": 5,
+        "weeklyLosses": 3,
+        "weeklyPushes": 0,
+        "weeklyAtsWins": 5,
+        "weeklyAtsLosses": 3,
+        "weeklyAtsPushes": 0
+      },
+      {
+        "managerKey": "danny-chryst",
+        "weeklyPoints": 7,
+        "weeklyWins": 4,
+        "weeklyLosses": 3,
+        "weeklyPushes": 0,
+        "weeklyAtsWins": 3,
+        "weeklyAtsLosses": 4,
+        "weeklyAtsPushes": 0
+      },
+      {
+        "managerKey": "tom-stamatakos",
+        "weeklyPoints": 10,
+        "weeklyWins": 6,
+        "weeklyLosses": 2,
+        "weeklyPushes": 0,
+        "weeklyAtsWins": 4,
+        "weeklyAtsLosses": 4,
+        "weeklyAtsPushes": 0
+      },
+      {
+        "managerKey": "joe-moeller",
+        "weeklyPoints": 5,
+        "weeklyWins": 2,
+        "weeklyLosses": 3,
+        "weeklyPushes": 0,
+        "weeklyAtsWins": 3,
+        "weeklyAtsLosses": 2,
+        "weeklyAtsPushes": 0
+      }
+    ],
+    "7": [
+      {
+        "managerKey": "michael-carey",
+        "weeklyPoints": 3,
+        "weeklyWins": 2,
+        "weeklyLosses": 1,
+        "weeklyPushes": 0,
+        "weeklyAtsWins": 1,
+        "weeklyAtsLosses": 2,
+        "weeklyAtsPushes": 0
+      },
+      {
+        "managerKey": "noah-corwin",
+        "weeklyPoints": 6,
+        "weeklyWins": 4,
+        "weeklyLosses": 4,
+        "weeklyPushes": 0,
+        "weeklyAtsWins": 2,
+        "weeklyAtsLosses": 6,
+        "weeklyAtsPushes": 0
+      },
+      {
+        "managerKey": "sally-ehrmann",
+        "weeklyPoints": 2,
+        "weeklyWins": 1,
+        "weeklyLosses": 6,
+        "weeklyPushes": 0,
+        "weeklyAtsWins": 1,
+        "weeklyAtsLosses": 6,
+        "weeklyAtsPushes": 0
+      },
+      {
+        "managerKey": "megan-corwin",
+        "weeklyPoints": 8,
+        "weeklyWins": 4,
+        "weeklyLosses": 4,
+        "weeklyPushes": 0,
+        "weeklyAtsWins": 4,
+        "weeklyAtsLosses": 4,
+        "weeklyAtsPushes": 0
+      },
+      {
+        "managerKey": "michael-miller",
+        "weeklyPoints": 7,
+        "weeklyWins": 3,
+        "weeklyLosses": 4,
+        "weeklyPushes": 0,
+        "weeklyAtsWins": 4,
+        "weeklyAtsLosses": 3,
+        "weeklyAtsPushes": 0
+      },
+      {
+        "managerKey": "nicky-abbs",
+        "weeklyPoints": 6,
+        "weeklyWins": 4,
+        "weeklyLosses": 2,
+        "weeklyPushes": 0,
+        "weeklyAtsWins": 2,
+        "weeklyAtsLosses": 4,
+        "weeklyAtsPushes": 0
+      },
+      {
+        "managerKey": "maddie-negaard",
+        "weeklyPoints": 13,
+        "weeklyWins": 6,
+        "weeklyLosses": 1,
+        "weeklyPushes": 0,
+        "weeklyAtsWins": 7,
+        "weeklyAtsLosses": 0,
+        "weeklyAtsPushes": 0
+      },
+      {
+        "managerKey": "danny-chryst",
+        "weeklyPoints": 9,
+        "weeklyWins": 4,
+        "weeklyLosses": 4,
+        "weeklyPushes": 0,
+        "weeklyAtsWins": 5,
+        "weeklyAtsLosses": 3,
+        "weeklyAtsPushes": 0
+      },
+      {
+        "managerKey": "tom-stamatakos",
+        "weeklyPoints": 7,
+        "weeklyWins": 5,
+        "weeklyLosses": 3,
+        "weeklyPushes": 0,
+        "weeklyAtsWins": 2,
+        "weeklyAtsLosses": 6,
+        "weeklyAtsPushes": 0
+      },
+      {
+        "managerKey": "joe-moeller",
+        "weeklyPoints": 6,
+        "weeklyWins": 4,
+        "weeklyLosses": 2,
+        "weeklyPushes": 0,
+        "weeklyAtsWins": 2,
+        "weeklyAtsLosses": 4,
+        "weeklyAtsPushes": 0
+      }
+    ],
+    "8": [
+      {
+        "managerKey": "michael-carey",
+        "weeklyPoints": 3,
+        "weeklyWins": 2,
+        "weeklyLosses": 3,
+        "weeklyPushes": 0,
+        "weeklyAtsWins": 1,
+        "weeklyAtsLosses": 4,
+        "weeklyAtsPushes": 0
+      },
+      {
+        "managerKey": "noah-corwin",
+        "weeklyPoints": 12,
+        "weeklyWins": 6,
+        "weeklyLosses": 0,
+        "weeklyPushes": 0,
+        "weeklyAtsWins": 6,
+        "weeklyAtsLosses": 0,
+        "weeklyAtsPushes": 0
+      },
+      {
+        "managerKey": "sally-ehrmann",
+        "weeklyPoints": 4,
+        "weeklyWins": 1,
+        "weeklyLosses": 4,
+        "weeklyPushes": 0,
+        "weeklyAtsWins": 3,
+        "weeklyAtsLosses": 2,
+        "weeklyAtsPushes": 0
+      },
+      {
+        "managerKey": "megan-corwin",
+        "weeklyPoints": 4,
+        "weeklyWins": 2,
+        "weeklyLosses": 6,
+        "weeklyPushes": 0,
+        "weeklyAtsWins": 2,
+        "weeklyAtsLosses": 6,
+        "weeklyAtsPushes": 0
+      },
+      {
+        "managerKey": "michael-miller",
+        "weeklyPoints": 8,
+        "weeklyWins": 5,
+        "weeklyLosses": 0,
+        "weeklyPushes": 0,
+        "weeklyAtsWins": 3,
+        "weeklyAtsLosses": 2,
+        "weeklyAtsPushes": 0
+      },
+      {
+        "managerKey": "nicky-abbs",
+        "weeklyPoints": 5,
+        "weeklyWins": 3,
+        "weeklyLosses": 3,
+        "weeklyPushes": 0,
+        "weeklyAtsWins": 2,
+        "weeklyAtsLosses": 4,
+        "weeklyAtsPushes": 0
+      },
+      {
+        "managerKey": "maddie-negaard",
+        "weeklyPoints": 6,
+        "weeklyWins": 4,
+        "weeklyLosses": 2,
+        "weeklyPushes": 0,
+        "weeklyAtsWins": 2,
+        "weeklyAtsLosses": 4,
+        "weeklyAtsPushes": 0
+      },
+      {
+        "managerKey": "danny-chryst",
+        "weeklyPoints": 6,
+        "weeklyWins": 4,
+        "weeklyLosses": 2,
+        "weeklyPushes": 0,
+        "weeklyAtsWins": 2,
+        "weeklyAtsLosses": 4,
+        "weeklyAtsPushes": 0
+      },
+      {
+        "managerKey": "tom-stamatakos",
+        "weeklyPoints": 11,
+        "weeklyWins": 6,
+        "weeklyLosses": 2,
+        "weeklyPushes": 0,
+        "weeklyAtsWins": 5,
+        "weeklyAtsLosses": 3,
+        "weeklyAtsPushes": 0
+      },
+      {
+        "managerKey": "joe-moeller",
+        "weeklyPoints": 6,
+        "weeklyWins": 4,
+        "weeklyLosses": 3,
+        "weeklyPushes": 0,
+        "weeklyAtsWins": 2,
+        "weeklyAtsLosses": 5,
+        "weeklyAtsPushes": 0
+      }
+    ],
+    "9": [
+      {
+        "managerKey": "michael-carey",
+        "weeklyPoints": 5,
+        "weeklyWins": 2,
+        "weeklyLosses": 3,
+        "weeklyPushes": 0,
+        "weeklyAtsWins": 3,
+        "weeklyAtsLosses": 2,
+        "weeklyAtsPushes": 0
+      },
+      {
+        "managerKey": "noah-corwin",
+        "weeklyPoints": 4,
+        "weeklyWins": 2,
+        "weeklyLosses": 4,
+        "weeklyPushes": 0,
+        "weeklyAtsWins": 2,
+        "weeklyAtsLosses": 4,
+        "weeklyAtsPushes": 0
+      },
+      {
+        "managerKey": "sally-ehrmann",
+        "weeklyPoints": 10,
+        "weeklyWins": 6,
+        "weeklyLosses": 1,
+        "weeklyPushes": 0,
+        "weeklyAtsWins": 4,
+        "weeklyAtsLosses": 3,
+        "weeklyAtsPushes": 0
+      },
+      {
+        "managerKey": "megan-corwin",
+        "weeklyPoints": 10,
+        "weeklyWins": 6,
+        "weeklyLosses": 2,
+        "weeklyPushes": 0,
+        "weeklyAtsWins": 4,
+        "weeklyAtsLosses": 4,
+        "weeklyAtsPushes": 0
+      },
+      {
+        "managerKey": "michael-miller",
+        "weeklyPoints": 7,
+        "weeklyWins": 4,
+        "weeklyLosses": 1,
+        "weeklyPushes": 0,
+        "weeklyAtsWins": 3,
+        "weeklyAtsLosses": 2,
+        "weeklyAtsPushes": 0
+      },
+      {
+        "managerKey": "nicky-abbs",
+        "weeklyPoints": 7,
+        "weeklyWins": 4,
+        "weeklyLosses": 1,
+        "weeklyPushes": 0,
+        "weeklyAtsWins": 3,
+        "weeklyAtsLosses": 2,
+        "weeklyAtsPushes": 0
+      },
+      {
+        "managerKey": "maddie-negaard",
+        "weeklyPoints": 3,
+        "weeklyWins": 3,
+        "weeklyLosses": 3,
+        "weeklyPushes": 0,
+        "weeklyAtsWins": 0,
+        "weeklyAtsLosses": 6,
+        "weeklyAtsPushes": 0
+      },
+      {
+        "managerKey": "danny-chryst",
+        "weeklyPoints": 9,
+        "weeklyWins": 4,
+        "weeklyLosses": 2,
+        "weeklyPushes": 0,
+        "weeklyAtsWins": 5,
+        "weeklyAtsLosses": 1,
+        "weeklyAtsPushes": 0
+      },
+      {
+        "managerKey": "tom-stamatakos",
+        "weeklyPoints": 12,
+        "weeklyWins": 6,
+        "weeklyLosses": 3,
+        "weeklyPushes": 0,
+        "weeklyAtsWins": 6,
+        "weeklyAtsLosses": 3,
+        "weeklyAtsPushes": 0
+      },
+      {
+        "managerKey": "joe-moeller",
+        "weeklyPoints": 6,
+        "weeklyWins": 3,
+        "weeklyLosses": 2,
+        "weeklyPushes": 0,
+        "weeklyAtsWins": 3,
+        "weeklyAtsLosses": 2,
+        "weeklyAtsPushes": 0
+      }
+    ],
+    "10": [
+      {
+        "managerKey": "michael-carey",
+        "weeklyPoints": 0,
+        "weeklyWins": 0,
+        "weeklyLosses": 3,
+        "weeklyPushes": 0,
+        "weeklyAtsWins": 0,
+        "weeklyAtsLosses": 3,
+        "weeklyAtsPushes": 0
+      },
+      {
+        "managerKey": "noah-corwin",
+        "weeklyPoints": 5,
+        "weeklyWins": 2,
+        "weeklyLosses": 4,
+        "weeklyPushes": 0,
+        "weeklyAtsWins": 3,
+        "weeklyAtsLosses": 3,
+        "weeklyAtsPushes": 0
+      },
+      {
+        "managerKey": "sally-ehrmann",
+        "weeklyPoints": 12,
+        "weeklyWins": 7,
+        "weeklyLosses": 0,
+        "weeklyPushes": 0,
+        "weeklyAtsWins": 5,
+        "weeklyAtsLosses": 2,
+        "weeklyAtsPushes": 0
+      },
+      {
+        "managerKey": "megan-corwin",
+        "weeklyPoints": 11,
+        "weeklyWins": 6,
+        "weeklyLosses": 1,
+        "weeklyPushes": 0,
+        "weeklyAtsWins": 5,
+        "weeklyAtsLosses": 2,
+        "weeklyAtsPushes": 0
+      },
+      {
+        "managerKey": "michael-miller",
+        "weeklyPoints": 6,
+        "weeklyWins": 3,
+        "weeklyLosses": 3,
+        "weeklyPushes": 0,
+        "weeklyAtsWins": 3,
+        "weeklyAtsLosses": 3,
+        "weeklyAtsPushes": 0
+      },
+      {
+        "managerKey": "nicky-abbs",
+        "weeklyPoints": 8,
+        "weeklyWins": 4,
+        "weeklyLosses": 1,
+        "weeklyPushes": 0,
+        "weeklyAtsWins": 4,
+        "weeklyAtsLosses": 1,
+        "weeklyAtsPushes": 0
+      },
+      {
+        "managerKey": "maddie-negaard",
+        "weeklyPoints": 5,
+        "weeklyWins": 3,
+        "weeklyLosses": 3,
+        "weeklyPushes": 0,
+        "weeklyAtsWins": 2,
+        "weeklyAtsLosses": 4,
+        "weeklyAtsPushes": 0
+      },
+      {
+        "managerKey": "danny-chryst",
+        "weeklyPoints": 9,
+        "weeklyWins": 4,
+        "weeklyLosses": 2,
+        "weeklyPushes": 0,
+        "weeklyAtsWins": 5,
+        "weeklyAtsLosses": 1,
+        "weeklyAtsPushes": 0
+      },
+      {
+        "managerKey": "tom-stamatakos",
+        "weeklyPoints": 13,
+        "weeklyWins": 9,
+        "weeklyLosses": 0,
+        "weeklyPushes": 0,
+        "weeklyAtsWins": 4,
+        "weeklyAtsLosses": 5,
+        "weeklyAtsPushes": 0
+      },
+      {
+        "managerKey": "joe-moeller",
+        "weeklyPoints": 2,
+        "weeklyWins": 2,
+        "weeklyLosses": 5,
+        "weeklyPushes": 0,
+        "weeklyAtsWins": 0,
+        "weeklyAtsLosses": 7,
+        "weeklyAtsPushes": 0
+      }
+    ],
+    "11": [
+      {
+        "managerKey": "michael-carey",
+        "weeklyPoints": 5,
+        "weeklyWins": 3,
+        "weeklyLosses": 3,
+        "weeklyPushes": 0,
+        "weeklyAtsWins": 2,
+        "weeklyAtsLosses": 4,
+        "weeklyAtsPushes": 0
+      },
+      {
+        "managerKey": "noah-corwin",
+        "weeklyPoints": 5,
+        "weeklyWins": 2,
+        "weeklyLosses": 6,
+        "weeklyPushes": 0,
+        "weeklyAtsWins": 3,
+        "weeklyAtsLosses": 5,
+        "weeklyAtsPushes": 0
+      },
+      {
+        "managerKey": "sally-ehrmann",
+        "weeklyPoints": 8,
+        "weeklyWins": 3,
+        "weeklyLosses": 4,
+        "weeklyPushes": 0,
+        "weeklyAtsWins": 5,
+        "weeklyAtsLosses": 2,
+        "weeklyAtsPushes": 0
+      },
+      {
+        "managerKey": "megan-corwin",
+        "weeklyPoints": 4,
+        "weeklyWins": 2,
+        "weeklyLosses": 5,
+        "weeklyPushes": 0,
+        "weeklyAtsWins": 2,
+        "weeklyAtsLosses": 5,
+        "weeklyAtsPushes": 0
+      },
+      {
+        "managerKey": "michael-miller",
+        "weeklyPoints": 7,
+        "weeklyWins": 4,
+        "weeklyLosses": 2,
+        "weeklyPushes": 0,
+        "weeklyAtsWins": 3,
+        "weeklyAtsLosses": 3,
+        "weeklyAtsPushes": 0
+      },
+      {
+        "managerKey": "nicky-abbs",
+        "weeklyPoints": 7,
+        "weeklyWins": 4,
+        "weeklyLosses": 2,
+        "weeklyPushes": 0,
+        "weeklyAtsWins": 3,
+        "weeklyAtsLosses": 3,
+        "weeklyAtsPushes": 0
+      },
+      {
+        "managerKey": "maddie-negaard",
+        "weeklyPoints": 8,
+        "weeklyWins": 5,
+        "weeklyLosses": 2,
+        "weeklyPushes": 0,
+        "weeklyAtsWins": 3,
+        "weeklyAtsLosses": 4,
+        "weeklyAtsPushes": 0
+      },
+      {
+        "managerKey": "danny-chryst",
+        "weeklyPoints": 9,
+        "weeklyWins": 5,
+        "weeklyLosses": 2,
+        "weeklyPushes": 0,
+        "weeklyAtsWins": 4,
+        "weeklyAtsLosses": 3,
+        "weeklyAtsPushes": 0
+      },
+      {
+        "managerKey": "tom-stamatakos",
+        "weeklyPoints": 13,
+        "weeklyWins": 7,
+        "weeklyLosses": 2,
+        "weeklyPushes": 0,
+        "weeklyAtsWins": 6,
+        "weeklyAtsLosses": 3,
+        "weeklyAtsPushes": 0
+      },
+      {
+        "managerKey": "joe-moeller",
+        "weeklyPoints": 7,
+        "weeklyWins": 4,
+        "weeklyLosses": 2,
+        "weeklyPushes": 0,
+        "weeklyAtsWins": 3,
+        "weeklyAtsLosses": 3,
+        "weeklyAtsPushes": 0
+      }
+    ],
+    "12": [
+      {
+        "managerKey": "michael-carey",
+        "weeklyPoints": 3,
+        "weeklyWins": 2,
+        "weeklyLosses": 3,
+        "weeklyPushes": 0,
+        "weeklyAtsWins": 1,
+        "weeklyAtsLosses": 4,
+        "weeklyAtsPushes": 0
+      },
+      {
+        "managerKey": "noah-corwin",
+        "weeklyPoints": 6,
+        "weeklyWins": 4,
+        "weeklyLosses": 3,
+        "weeklyPushes": 0,
+        "weeklyAtsWins": 2,
+        "weeklyAtsLosses": 5,
+        "weeklyAtsPushes": 0
+      },
+      {
+        "managerKey": "sally-ehrmann",
+        "weeklyPoints": 13.5,
+        "weeklyWins": 7,
+        "weeklyLosses": 1,
+        "weeklyPushes": 0,
+        "weeklyAtsWins": 6,
+        "weeklyAtsLosses": 1,
+        "weeklyAtsPushes": 1
+      },
+      {
+        "managerKey": "megan-corwin",
+        "weeklyPoints": 16,
+        "weeklyWins": 8,
+        "weeklyLosses": 2,
+        "weeklyPushes": 0,
+        "weeklyAtsWins": 8,
+        "weeklyAtsLosses": 2,
+        "weeklyAtsPushes": 0
+      },
+      {
+        "managerKey": "michael-miller",
+        "weeklyPoints": 7,
+        "weeklyWins": 4,
+        "weeklyLosses": 3,
+        "weeklyPushes": 0,
+        "weeklyAtsWins": 3,
+        "weeklyAtsLosses": 4,
+        "weeklyAtsPushes": 0
+      },
+      {
+        "managerKey": "nicky-abbs",
+        "weeklyPoints": 6,
+        "weeklyWins": 4,
+        "weeklyLosses": 2,
+        "weeklyPushes": 0,
+        "weeklyAtsWins": 2,
+        "weeklyAtsLosses": 4,
+        "weeklyAtsPushes": 0
+      },
+      {
+        "managerKey": "maddie-negaard",
+        "weeklyPoints": 8,
+        "weeklyWins": 5,
+        "weeklyLosses": 3,
+        "weeklyPushes": 0,
+        "weeklyAtsWins": 3,
+        "weeklyAtsLosses": 5,
+        "weeklyAtsPushes": 0
+      },
+      {
+        "managerKey": "danny-chryst",
+        "weeklyPoints": 12,
+        "weeklyWins": 6,
+        "weeklyLosses": 1,
+        "weeklyPushes": 0,
+        "weeklyAtsWins": 6,
+        "weeklyAtsLosses": 1,
+        "weeklyAtsPushes": 0
+      },
+      {
+        "managerKey": "tom-stamatakos",
+        "weeklyPoints": 9,
+        "weeklyWins": 5,
+        "weeklyLosses": 3,
+        "weeklyPushes": 0,
+        "weeklyAtsWins": 4,
+        "weeklyAtsLosses": 4,
+        "weeklyAtsPushes": 0
+      },
+      {
+        "managerKey": "joe-moeller",
+        "weeklyPoints": 5,
+        "weeklyWins": 3,
+        "weeklyLosses": 2,
+        "weeklyPushes": 0,
+        "weeklyAtsWins": 2,
+        "weeklyAtsLosses": 3,
+        "weeklyAtsPushes": 0
+      }
+    ],
+    "13": [
+      {
+        "managerKey": "michael-carey",
+        "weeklyPoints": 5.5,
+        "weeklyWins": 2,
+        "weeklyLosses": 3,
+        "weeklyPushes": 0,
+        "weeklyAtsWins": 3,
+        "weeklyAtsLosses": 1,
+        "weeklyAtsPushes": 1
+      },
+      {
+        "managerKey": "noah-corwin",
+        "weeklyPoints": 7,
+        "weeklyWins": 4,
+        "weeklyLosses": 3,
+        "weeklyPushes": 0,
+        "weeklyAtsWins": 3,
+        "weeklyAtsLosses": 4,
+        "weeklyAtsPushes": 0
+      },
+      {
+        "managerKey": "sally-ehrmann",
+        "weeklyPoints": 4,
+        "weeklyWins": 3,
+        "weeklyLosses": 3,
+        "weeklyPushes": 0,
+        "weeklyAtsWins": 1,
+        "weeklyAtsLosses": 5,
+        "weeklyAtsPushes": 0
+      },
+      {
+        "managerKey": "megan-corwin",
+        "weeklyPoints": 13,
+        "weeklyWins": 7,
+        "weeklyLosses": 2,
+        "weeklyPushes": 0,
+        "weeklyAtsWins": 6,
+        "weeklyAtsLosses": 3,
+        "weeklyAtsPushes": 0
+      },
+      {
+        "managerKey": "michael-miller",
+        "weeklyPoints": 8,
+        "weeklyWins": 5,
+        "weeklyLosses": 2,
+        "weeklyPushes": 0,
+        "weeklyAtsWins": 2,
+        "weeklyAtsLosses": 3,
+        "weeklyAtsPushes": 2
+      },
+      {
+        "managerKey": "nicky-abbs",
+        "weeklyPoints": 5,
+        "weeklyWins": 3,
+        "weeklyLosses": 4,
+        "weeklyPushes": 0,
+        "weeklyAtsWins": 1,
+        "weeklyAtsLosses": 4,
+        "weeklyAtsPushes": 2
+      },
+      {
+        "managerKey": "maddie-negaard",
+        "weeklyPoints": 6,
+        "weeklyWins": 3,
+        "weeklyLosses": 5,
+        "weeklyPushes": 0,
+        "weeklyAtsWins": 3,
+        "weeklyAtsLosses": 5,
+        "weeklyAtsPushes": 0
+      },
+      {
+        "managerKey": "danny-chryst",
+        "weeklyPoints": 12,
+        "weeklyWins": 7,
+        "weeklyLosses": 1,
+        "weeklyPushes": 0,
+        "weeklyAtsWins": 5,
+        "weeklyAtsLosses": 3,
+        "weeklyAtsPushes": 0
+      },
+      {
+        "managerKey": "tom-stamatakos",
+        "weeklyPoints": 10,
+        "weeklyWins": 6,
+        "weeklyLosses": 1,
+        "weeklyPushes": 0,
+        "weeklyAtsWins": 4,
+        "weeklyAtsLosses": 3,
+        "weeklyAtsPushes": 0
+      },
+      {
+        "managerKey": "joe-moeller",
+        "weeklyPoints": 14,
+        "weeklyWins": 7,
+        "weeklyLosses": 0,
+        "weeklyPushes": 0,
+        "weeklyAtsWins": 7,
+        "weeklyAtsLosses": 0,
+        "weeklyAtsPushes": 0
+      }
+    ],
+    "14": [
+      {
+        "managerKey": "michael-carey",
+        "weeklyPoints": 0,
+        "weeklyWins": 0,
+        "weeklyLosses": 0,
+        "weeklyPushes": 0,
+        "weeklyAtsWins": 0,
+        "weeklyAtsLosses": 0,
+        "weeklyAtsPushes": 0
+      },
+      {
+        "managerKey": "noah-corwin",
+        "weeklyPoints": 0,
+        "weeklyWins": 0,
+        "weeklyLosses": 1,
+        "weeklyPushes": 0,
+        "weeklyAtsWins": 0,
+        "weeklyAtsLosses": 1,
+        "weeklyAtsPushes": 0
+      },
+      {
+        "managerKey": "sally-ehrmann",
+        "weeklyPoints": 0,
+        "weeklyWins": 0,
+        "weeklyLosses": 1,
+        "weeklyPushes": 0,
+        "weeklyAtsWins": 0,
+        "weeklyAtsLosses": 1,
+        "weeklyAtsPushes": 0
+      },
+      {
+        "managerKey": "megan-corwin",
+        "weeklyPoints": 0,
+        "weeklyWins": 0,
+        "weeklyLosses": 2,
+        "weeklyPushes": 0,
+        "weeklyAtsWins": 0,
+        "weeklyAtsLosses": 2,
+        "weeklyAtsPushes": 0
+      },
+      {
+        "managerKey": "michael-miller",
+        "weeklyPoints": 0,
+        "weeklyWins": 0,
+        "weeklyLosses": 1,
+        "weeklyPushes": 0,
+        "weeklyAtsWins": 0,
+        "weeklyAtsLosses": 1,
+        "weeklyAtsPushes": 0
+      },
+      {
+        "managerKey": "nicky-abbs",
+        "weeklyPoints": 1,
+        "weeklyWins": 1,
+        "weeklyLosses": 1,
+        "weeklyPushes": 0,
+        "weeklyAtsWins": 0,
+        "weeklyAtsLosses": 2,
+        "weeklyAtsPushes": 0
+      },
+      {
+        "managerKey": "maddie-negaard",
+        "weeklyPoints": 2,
+        "weeklyWins": 1,
+        "weeklyLosses": 1,
+        "weeklyPushes": 0,
+        "weeklyAtsWins": 1,
+        "weeklyAtsLosses": 1,
+        "weeklyAtsPushes": 0
+      },
+      {
+        "managerKey": "danny-chryst",
+        "weeklyPoints": 5,
+        "weeklyWins": 3,
+        "weeklyLosses": 1,
+        "weeklyPushes": 0,
+        "weeklyAtsWins": 2,
+        "weeklyAtsLosses": 2,
+        "weeklyAtsPushes": 0
+      },
+      {
+        "managerKey": "tom-stamatakos",
+        "weeklyPoints": 5,
+        "weeklyWins": 4,
+        "weeklyLosses": 1,
+        "weeklyPushes": 0,
+        "weeklyAtsWins": 1,
+        "weeklyAtsLosses": 4,
+        "weeklyAtsPushes": 0
+      },
+      {
+        "managerKey": "joe-moeller",
+        "weeklyPoints": 2,
+        "weeklyWins": 1,
+        "weeklyLosses": 1,
+        "weeklyPushes": 0,
+        "weeklyAtsWins": 1,
+        "weeklyAtsLosses": 1,
+        "weeklyAtsPushes": 0
+      }
+    ],
+    "15": [
+      {
+        "managerKey": "michael-carey",
+        "weeklyPoints": 1,
+        "weeklyWins": 1,
+        "weeklyLosses": 0,
+        "weeklyPushes": 0,
+        "weeklyAtsWins": 0,
+        "weeklyAtsLosses": 1,
+        "weeklyAtsPushes": 0
+      },
+      {
+        "managerKey": "noah-corwin",
+        "weeklyPoints": 0,
+        "weeklyWins": 0,
+        "weeklyLosses": 0,
+        "weeklyPushes": 0,
+        "weeklyAtsWins": 0,
+        "weeklyAtsLosses": 0,
+        "weeklyAtsPushes": 0
+      },
+      {
+        "managerKey": "sally-ehrmann",
+        "weeklyPoints": 0,
+        "weeklyWins": 0,
+        "weeklyLosses": 0,
+        "weeklyPushes": 0,
+        "weeklyAtsWins": 0,
+        "weeklyAtsLosses": 0,
+        "weeklyAtsPushes": 0
+      },
+      {
+        "managerKey": "megan-corwin",
+        "weeklyPoints": 1,
+        "weeklyWins": 0,
+        "weeklyLosses": 1,
+        "weeklyPushes": 0,
+        "weeklyAtsWins": 1,
+        "weeklyAtsLosses": 0,
+        "weeklyAtsPushes": 0
+      },
+      {
+        "managerKey": "michael-miller",
+        "weeklyPoints": 0,
+        "weeklyWins": 0,
+        "weeklyLosses": 0,
+        "weeklyPushes": 0,
+        "weeklyAtsWins": 0,
+        "weeklyAtsLosses": 0,
+        "weeklyAtsPushes": 0
+      },
+      {
+        "managerKey": "nicky-abbs",
+        "weeklyPoints": 0,
+        "weeklyWins": 0,
+        "weeklyLosses": 0,
+        "weeklyPushes": 0,
+        "weeklyAtsWins": 0,
+        "weeklyAtsLosses": 0,
+        "weeklyAtsPushes": 0
+      },
+      {
+        "managerKey": "maddie-negaard",
+        "weeklyPoints": 0,
+        "weeklyWins": 0,
+        "weeklyLosses": 0,
+        "weeklyPushes": 0,
+        "weeklyAtsWins": 0,
+        "weeklyAtsLosses": 0,
+        "weeklyAtsPushes": 0
+      },
+      {
+        "managerKey": "danny-chryst",
+        "weeklyPoints": 0,
+        "weeklyWins": 0,
+        "weeklyLosses": 0,
+        "weeklyPushes": 0,
+        "weeklyAtsWins": 0,
+        "weeklyAtsLosses": 0,
+        "weeklyAtsPushes": 0
+      },
+      {
+        "managerKey": "tom-stamatakos",
+        "weeklyPoints": 0,
+        "weeklyWins": 0,
+        "weeklyLosses": 0,
+        "weeklyPushes": 0,
+        "weeklyAtsWins": 0,
+        "weeklyAtsLosses": 0,
+        "weeklyAtsPushes": 0
+      },
+      {
+        "managerKey": "joe-moeller",
+        "weeklyPoints": 0,
+        "weeklyWins": 0,
+        "weeklyLosses": 0,
+        "weeklyPushes": 0,
+        "weeklyAtsWins": 0,
+        "weeklyAtsLosses": 0,
+        "weeklyAtsPushes": 0
+      }
+    ],
+    "16": [
+      {
+        "managerKey": "michael-carey",
+        "weeklyPoints": 0,
+        "weeklyWins": 0,
+        "weeklyLosses": 0,
+        "weeklyPushes": 0,
+        "weeklyAtsWins": 0,
+        "weeklyAtsLosses": 0,
+        "weeklyAtsPushes": 0
+      },
+      {
+        "managerKey": "noah-corwin",
+        "weeklyPoints": 0,
+        "weeklyWins": 0,
+        "weeklyLosses": 0,
+        "weeklyPushes": 0,
+        "weeklyAtsWins": 0,
+        "weeklyAtsLosses": 0,
+        "weeklyAtsPushes": 0
+      },
+      {
+        "managerKey": "sally-ehrmann",
+        "weeklyPoints": 0,
+        "weeklyWins": 0,
+        "weeklyLosses": 0,
+        "weeklyPushes": 0,
+        "weeklyAtsWins": 0,
+        "weeklyAtsLosses": 0,
+        "weeklyAtsPushes": 0
+      },
+      {
+        "managerKey": "megan-corwin",
+        "weeklyPoints": 0,
+        "weeklyWins": 0,
+        "weeklyLosses": 0,
+        "weeklyPushes": 0,
+        "weeklyAtsWins": 0,
+        "weeklyAtsLosses": 0,
+        "weeklyAtsPushes": 0
+      },
+      {
+        "managerKey": "michael-miller",
+        "weeklyPoints": 0,
+        "weeklyWins": 0,
+        "weeklyLosses": 0,
+        "weeklyPushes": 0,
+        "weeklyAtsWins": 0,
+        "weeklyAtsLosses": 0,
+        "weeklyAtsPushes": 0
+      },
+      {
+        "managerKey": "nicky-abbs",
+        "weeklyPoints": 0,
+        "weeklyWins": 0,
+        "weeklyLosses": 0,
+        "weeklyPushes": 0,
+        "weeklyAtsWins": 0,
+        "weeklyAtsLosses": 0,
+        "weeklyAtsPushes": 0
+      },
+      {
+        "managerKey": "maddie-negaard",
+        "weeklyPoints": 0,
+        "weeklyWins": 0,
+        "weeklyLosses": 0,
+        "weeklyPushes": 0,
+        "weeklyAtsWins": 0,
+        "weeklyAtsLosses": 0,
+        "weeklyAtsPushes": 0
+      },
+      {
+        "managerKey": "danny-chryst",
+        "weeklyPoints": 0,
+        "weeklyWins": 0,
+        "weeklyLosses": 0,
+        "weeklyPushes": 0,
+        "weeklyAtsWins": 0,
+        "weeklyAtsLosses": 0,
+        "weeklyAtsPushes": 0
+      },
+      {
+        "managerKey": "tom-stamatakos",
+        "weeklyPoints": 0,
+        "weeklyWins": 0,
+        "weeklyLosses": 0,
+        "weeklyPushes": 0,
+        "weeklyAtsWins": 0,
+        "weeklyAtsLosses": 0,
+        "weeklyAtsPushes": 0
+      },
+      {
+        "managerKey": "joe-moeller",
+        "weeklyPoints": 0,
+        "weeklyWins": 0,
+        "weeklyLosses": 0,
+        "weeklyPushes": 0,
+        "weeklyAtsWins": 0,
+        "weeklyAtsLosses": 0,
+        "weeklyAtsPushes": 0
+      }
+    ],
+    "17": [
+      {
+        "managerKey": "michael-carey",
+        "weeklyPoints": 0,
+        "weeklyWins": 0,
+        "weeklyLosses": 0,
+        "weeklyPushes": 0,
+        "weeklyAtsWins": 0,
+        "weeklyAtsLosses": 0,
+        "weeklyAtsPushes": 0
+      },
+      {
+        "managerKey": "noah-corwin",
+        "weeklyPoints": 0,
+        "weeklyWins": 0,
+        "weeklyLosses": 0,
+        "weeklyPushes": 0,
+        "weeklyAtsWins": 0,
+        "weeklyAtsLosses": 0,
+        "weeklyAtsPushes": 0
+      },
+      {
+        "managerKey": "sally-ehrmann",
+        "weeklyPoints": 0,
+        "weeklyWins": 0,
+        "weeklyLosses": 0,
+        "weeklyPushes": 0,
+        "weeklyAtsWins": 0,
+        "weeklyAtsLosses": 0,
+        "weeklyAtsPushes": 0
+      },
+      {
+        "managerKey": "megan-corwin",
+        "weeklyPoints": 0,
+        "weeklyWins": 0,
+        "weeklyLosses": 0,
+        "weeklyPushes": 0,
+        "weeklyAtsWins": 0,
+        "weeklyAtsLosses": 0,
+        "weeklyAtsPushes": 0
+      },
+      {
+        "managerKey": "michael-miller",
+        "weeklyPoints": 0,
+        "weeklyWins": 0,
+        "weeklyLosses": 0,
+        "weeklyPushes": 0,
+        "weeklyAtsWins": 0,
+        "weeklyAtsLosses": 0,
+        "weeklyAtsPushes": 0
+      },
+      {
+        "managerKey": "nicky-abbs",
+        "weeklyPoints": 0,
+        "weeklyWins": 0,
+        "weeklyLosses": 0,
+        "weeklyPushes": 0,
+        "weeklyAtsWins": 0,
+        "weeklyAtsLosses": 0,
+        "weeklyAtsPushes": 0
+      },
+      {
+        "managerKey": "maddie-negaard",
+        "weeklyPoints": 0,
+        "weeklyWins": 0,
+        "weeklyLosses": 0,
+        "weeklyPushes": 0,
+        "weeklyAtsWins": 0,
+        "weeklyAtsLosses": 0,
+        "weeklyAtsPushes": 0
+      },
+      {
+        "managerKey": "danny-chryst",
+        "weeklyPoints": 0,
+        "weeklyWins": 0,
+        "weeklyLosses": 0,
+        "weeklyPushes": 0,
+        "weeklyAtsWins": 0,
+        "weeklyAtsLosses": 0,
+        "weeklyAtsPushes": 0
+      },
+      {
+        "managerKey": "tom-stamatakos",
+        "weeklyPoints": 0,
+        "weeklyWins": 0,
+        "weeklyLosses": 0,
+        "weeklyPushes": 0,
+        "weeklyAtsWins": 0,
+        "weeklyAtsLosses": 0,
+        "weeklyAtsPushes": 0
+      },
+      {
+        "managerKey": "joe-moeller",
+        "weeklyPoints": 0,
+        "weeklyWins": 0,
+        "weeklyLosses": 0,
+        "weeklyPushes": 0,
+        "weeklyAtsWins": 0,
+        "weeklyAtsLosses": 0,
+        "weeklyAtsPushes": 0
+      }
+    ]
+  }
+}

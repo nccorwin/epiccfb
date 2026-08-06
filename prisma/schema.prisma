@@ -1,0 +1,248 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum ConferenceGroupType {
+  POWER
+  GROUP_OF_FIVE
+  FCS
+  OTHER
+}
+
+enum RosterSlotType {
+  BIG_TEN
+  BIG_TWELVE
+  SEC
+  ACC
+  GROUP_OF_FIVE
+  FCS
+  WILDCARD
+}
+
+enum UserRole {
+  MANAGER
+  ADMIN
+}
+
+model User {
+  id                        String               @id @default(cuid())
+  email                     String               @unique
+  username                  String?              @unique
+  firstName                 String?
+  lastName                  String?
+  name                      String?
+  passwordHash              String?
+  lastSeenIp                String?
+  emailVerified            Boolean              @default(false)
+  verificationTokenHash    String?              @unique
+  verificationTokenExpiresAt DateTime?
+  verifiedAt                DateTime?
+  role                      UserRole             @default(MANAGER)
+  createdAt                 DateTime             @default(now())
+  leagueUsers               LeagueUser[]
+  rosters                   Roster[]
+  weeklyScores              WeeklyScore[]
+  draftPicks                DraftPick[]
+  sessions                  Session[]
+  leagueHistoryEntries      LeagueHistoryEntry[]
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  tokenHash    String   @unique
+  user         User     @relation(fields: [userId], references: [id])
+  userId       String
+  ipAddress    String?
+  userAgent    String?
+  expiresAt    DateTime
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+}
+
+model League {
+  id           String          @id @default(cuid())
+  name         String
+  season       Season          @relation(fields: [seasonId], references: [id])
+  seasonId     String
+  settings     Json?
+  createdAt    DateTime        @default(now())
+  leagueUsers  LeagueUser[]
+  draftPicks   DraftPick[]
+  rosters      Roster[]
+  weeklyScores WeeklyScore[]
+}
+
+model LeagueUser {
+  id            String   @id @default(cuid())
+  league        League   @relation(fields: [leagueId], references: [id])
+  leagueId      String
+  user          User     @relation(fields: [userId], references: [id])
+  userId        String
+  draftPosition Int?
+  createdAt     DateTime @default(now())
+
+  @@unique([leagueId, userId])
+}
+
+model Conference {
+  id         String               @id @default(cuid())
+  name       String
+  shortName  String
+  groupType  ConferenceGroupType
+  teams      Team[]
+}
+
+model Team {
+  id               String                  @id @default(cuid())
+  externalId       String?                 @unique
+  name             String
+  shortName        String?
+  schoolSlug       String?
+  conference       Conference?             @relation(fields: [conferenceId], references: [id])
+  conferenceId     String?
+  isFcs            Boolean                 @default(false)
+  createdAt        DateTime                @default(now())
+  draftPicks       DraftPick[]
+  rosters          Roster[]
+  homeGames        Game[]                  @relation("homeGames")
+  awayGames        Game[]                  @relation("awayGames")
+  externalMappings ExternalTeamMapping[]
+}
+
+model DraftPick {
+  id         String   @id @default(cuid())
+  league     League   @relation(fields: [leagueId], references: [id])
+  leagueId   String
+  round      Int
+  pickNumber Int
+  user       User?    @relation(fields: [userId], references: [id])
+  userId     String?
+  team       Team?    @relation(fields: [teamId], references: [id])
+  teamId     String?
+  pickedAt   DateTime?
+}
+
+model Roster {
+  id        String         @id @default(cuid())
+  league    League         @relation(fields: [leagueId], references: [id])
+  leagueId  String
+  user      User           @relation(fields: [userId], references: [id])
+  userId    String
+  team      Team           @relation(fields: [teamId], references: [id])
+  teamId    String
+  slotType  RosterSlotType
+  createdAt DateTime       @default(now())
+
+  @@unique([leagueId, userId, teamId])
+}
+
+model LeagueHistoryEntry {
+  id         String   @id @default(cuid())
+  season     Int
+  firstName  String?
+  lastName   String?
+  user       User?    @relation(fields: [userId], references: [id])
+  userId     String?
+  finalRank  Int
+  totalPoints Float
+  teamName   String
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@index([season, finalRank])
+  @@index([userId])
+}
+
+model Season {
+  id        String   @id @default(cuid())
+  year      Int
+  startDate DateTime
+  endDate   DateTime
+  weeks     Week[]
+  leagues   League[]
+  games     Game[]
+}
+
+model Week {
+  id           String        @id @default(cuid())
+  season       Season        @relation(fields: [seasonId], references: [id])
+  seasonId     String
+  weekNumber   Int
+  startDate    DateTime
+  endDate      DateTime
+  games        Game[]
+  weeklyScores WeeklyScore[]
+
+  @@unique([seasonId, weekNumber])
+}
+
+model Game {
+  id             String        @id @default(cuid())
+  externalGameId String?       @unique
+  season         Season        @relation(fields: [seasonId], references: [id])
+  seasonId       String
+  week           Week?         @relation(fields: [weekId], references: [id])
+  weekId         String?
+  homeTeam       Team          @relation("homeGames", fields: [homeTeamId], references: [id])
+  homeTeamId     String
+  awayTeam       Team          @relation("awayGames", fields: [awayTeamId], references: [id])
+  awayTeamId     String
+  scheduledAt    DateTime
+  completed      Boolean       @default(false)
+  lines          GameLine[]
+  result         GameResult?
+}
+
+model GameLine {
+  id             String     @id @default(cuid())
+  game           Game       @relation(fields: [gameId], references: [id])
+  gameId         String
+  provider       String
+  bookmakerName  String?
+  lastUpdated    DateTime   @default(now())
+  spreadHome     Float?
+  spreadAway     Float?
+  overUnder      Float?
+  moneylineHome  Float?
+  moneylineAway  Float?
+  createdAt      DateTime   @default(now())
+}
+
+model GameResult {
+  id          String   @id @default(cuid())
+  game        Game     @relation(fields: [gameId], references: [id])
+  gameId      String   @unique
+  homeScore   Int
+  awayScore   Int
+  completedAt DateTime @default(now())
+}
+
+model WeeklyScore {
+  id        String   @id @default(cuid())
+  league    League   @relation(fields: [leagueId], references: [id])
+  leagueId  String
+  user      User     @relation(fields: [userId], references: [id])
+  userId    String
+  week      Week     @relation(fields: [weekId], references: [id])
+  weekId    String
+  points    Float
+  details   Json?
+  createdAt DateTime @default(now())
+
+  @@unique([leagueId, userId, weekId])
+}
+
+model ExternalTeamMapping {
+  id               String   @id @default(cuid())
+  externalSource   String
+  externalTeamName String
+  team             Team     @relation(fields: [teamId], references: [id])
+  teamId           String
+
+  @@unique([externalSource, externalTeamName])
+}
