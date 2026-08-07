@@ -1,6 +1,10 @@
 'use client';
 
 import { type FormEvent, useEffect, useMemo, useState } from "react";
+import {
+  resolveSlotTypeForSelection,
+  type DraftSlotType,
+} from "@/lib/draft-slot-logic";
 
 export type DraftPageUser = {
   id: string;
@@ -66,7 +70,7 @@ const draftRequirements = [
   { label: "FCS", slot: "FCS", count: 2 },
   { label: "Wildcard", slot: "WILDCARD", count: 2 },
 ];
-type DraftSlot = (typeof draftRequirements)[number]["slot"];
+type DraftSlot = DraftSlotType;
 
 function formatTimeLeft(ms: number) {
   const totalSeconds = Math.max(0, Math.floor(ms / 1000));
@@ -76,60 +80,8 @@ function formatTimeLeft(ms: number) {
   return `${hours.toString().padStart(2, "0")}:${minutes.toString().padStart(2, "0")}:${seconds.toString().padStart(2, "0")}`;
 }
 
-function normalizeConferenceName(conferenceName?: string | null) {
-  return conferenceName?.trim().toLowerCase() ?? "";
-}
-
-function isIndependentConference(conferenceName: string) {
-  return ["independent", "independents", "notre dame", "uconn"].some((token) => conferenceName.includes(token));
-}
-
-function getBaseSlotForTeam(team: Team): DraftSlot {
-  if (team.isFcs) return "FCS";
-  const conferenceName = normalizeConferenceName(team.conference?.name);
-  if (conferenceName.includes("big ten") || conferenceName.includes("big 10")) return "BIG_TEN";
-  if (conferenceName.includes("big 12")) return "BIG_TWELVE";
-  if (conferenceName.includes("sec")) return "SEC";
-  if (conferenceName.includes("acc")) return "ACC";
-  if (
-    [
-      "american athletic",
-      "conference usa",
-      "mac",
-      "mountain west",
-      "pac",
-      "sun belt",
-    ].some((name) => conferenceName.includes(name))
-  ) {
-    return "GROUP_OF_FIVE";
-  }
-  return "WILDCARD";
-}
-
 function resolveTeamSlot(team: Team, existingSelections: Array<{ slotType: DraftSlot; team: Team }>): DraftSlot {
-  const baseSlotType = getBaseSlotForTeam(team);
-  const conferenceName = normalizeConferenceName(team.conference?.name);
-  const existingConferenceNames = existingSelections
-    .map((selection) => normalizeConferenceName(selection.team.conference?.name))
-    .filter(Boolean);
-
-  if (baseSlotType === "FCS") {
-    const existingFcsSlots = existingSelections.filter((selection) => selection.slotType === "FCS").length;
-    if (existingFcsSlots >= 2) {
-      return "WILDCARD";
-    }
-    return "FCS";
-  }
-
-  if (baseSlotType === "WILDCARD" || isIndependentConference(conferenceName)) {
-    return "WILDCARD";
-  }
-
-  if (existingConferenceNames.includes(conferenceName)) {
-    return "WILDCARD";
-  }
-
-  return baseSlotType;
+  return resolveSlotTypeForSelection(team, existingSelections);
 }
 
 function getDraftStatus(league: League | null): DraftStatus {
