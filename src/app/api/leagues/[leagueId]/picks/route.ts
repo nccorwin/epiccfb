@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { UserRole, type Prisma } from "@prisma/client";
 import { getCurrentUser } from "@/lib/auth";
+import { findLikelyManagerMatch } from "@/lib/manager-name-match";
 import { prisma } from "@/lib/prisma";
 import { getDraftPickNumber, resolveRosterSlotTypeForSelection, validateRosterSelection } from "@/lib/league-rules";
 
@@ -86,6 +87,9 @@ export async function POST(
     where: { id: leagueId },
     include: {
       leagueUsers: {
+        include: {
+          user: true,
+        },
         orderBy: [{ draftPosition: "asc" }, { createdAt: "asc" }],
       },
     },
@@ -129,9 +133,28 @@ export async function POST(
     return NextResponse.json({ error: "Unable to determine the current picker." }, { status: 409 });
   }
 
+  const matchedLeagueUser = findLikelyManagerMatch(
+    {
+      userId: currentUser.id,
+      email: currentUser.email,
+      firstName: currentUser.firstName,
+      lastName: currentUser.lastName,
+      displayName: currentUser.name,
+    },
+    orderedLeagueUsers.map((entry) => ({
+      ...entry,
+      userId: entry.userId,
+      email: entry.user.email,
+      firstName: entry.user.firstName,
+      lastName: entry.user.lastName,
+      displayName: entry.user.name,
+    })),
+  );
+  const resolvedCurrentUserId = matchedLeagueUser?.userId ?? currentUser.id;
+
   const userId = currentUser.role === UserRole.ADMIN
     ? requestedUserId || currentPickerUserId
-    : currentUser.id;
+    : resolvedCurrentUserId;
 
   if (userId !== currentPickerUserId && currentUser.role !== UserRole.ADMIN) {
     return NextResponse.json({ error: "It is not your turn to pick." }, { status: 403 });

@@ -1,6 +1,7 @@
 'use client';
 
 import { type FormEvent, useEffect, useMemo, useState } from "react";
+import { findLikelyManagerMatch } from "@/lib/manager-name-match";
 import {
   resolveSlotTypeForSelection,
   type DraftSlotType,
@@ -184,6 +185,32 @@ export default function DraftPage({ currentUser }: { currentUser: DraftPageUser 
     });
   }, [draftOrder, league]);
 
+  const matchedLeagueMember = useMemo(() => {
+    return findLikelyManagerMatch(
+      {
+        userId: currentUser.id,
+        email: currentUser.email,
+        firstName: currentUser.firstName,
+        lastName: currentUser.lastName,
+        displayName: currentUser.name,
+      },
+      sortedMembers.map((member) => ({
+        ...member,
+        userId: member.user.id,
+        email: member.user.email,
+        firstName: member.user.firstName,
+        lastName: member.user.lastName,
+        displayName: member.user.name,
+      })),
+    );
+  }, [currentUser.email, currentUser.firstName, currentUser.id, currentUser.lastName, currentUser.name, sortedMembers]);
+
+  const currentManagerUserId = matchedLeagueMember?.user.id ?? currentUser.id;
+  const currentManagerUserIds = useMemo(
+    () => Array.from(new Set([currentUser.id, matchedLeagueMember?.user.id].filter((value): value is string => Boolean(value)))),
+    [currentUser.id, matchedLeagueMember?.user.id],
+  );
+
   const draftStatus = getDraftStatus(league);
   const currentPickStartedAt = getCurrentPickStartedAt(league);
   const userCount = sortedMembers.length;
@@ -194,7 +221,7 @@ export default function DraftPage({ currentUser }: { currentUser: DraftPageUser 
     draftStatus === "IN_PROGRESS" && !draftIsComplete
       ? getPickerForPickIndex(pickCount, sortedMembers)
       : null;
-  const isMyTurn = activePickOwner?.user.id === currentUser.id;
+  const isMyTurn = activePickOwner?.user.id === currentManagerUserId;
   const deadlineAt =
     draftStatus === "IN_PROGRESS" && currentPickStartedAt
       ? new Date(currentPickStartedAt).getTime() + PICK_WINDOW_MS
@@ -235,7 +262,10 @@ export default function DraftPage({ currentUser }: { currentUser: DraftPageUser 
       ? selectedTeamId
       : (availableTeams[0]?.id ?? "");
 
-  const userPicks = useMemo(() => picks.filter((pick) => pick.user?.id === currentUser.id), [currentUser.id, picks]);
+  const userPicks = useMemo(
+    () => picks.filter((pick) => pick.user?.id && currentManagerUserIds.includes(pick.user.id)),
+    [currentManagerUserIds, picks],
+  );
 
   const completedCriteria = useMemo(() => {
     const orderedUserPicks = [...userPicks].sort((left, right) => {
@@ -276,13 +306,13 @@ export default function DraftPage({ currentUser }: { currentUser: DraftPageUser 
 
     for (let nextPickIndex = pickCount; nextPickIndex < totalPickCount; nextPickIndex += 1) {
       const picker = getPickerForPickIndex(nextPickIndex, sortedMembers);
-      if (picker?.user.id === currentUser.id) {
+      if (picker?.user.id === currentManagerUserId) {
         return nextPickIndex - pickCount;
       }
     }
 
     return null;
-  }, [currentUser.id, draftIsComplete, draftStatus, pickCount, sortedMembers, totalPickCount, userCount]);
+  }, [currentManagerUserId, draftIsComplete, draftStatus, pickCount, sortedMembers, totalPickCount, userCount]);
 
   const pickByRoundAndUserId = useMemo(() => {
     const map = new Map<string, DraftPick>();

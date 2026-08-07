@@ -96,13 +96,10 @@ export default async function LeagueHistoryPage({ isAdmin = false }: { isAdmin?:
 
       {seasonSummaries.map((seasonSummary) => (
         <section key={seasonSummary.season} className="rounded-3xl border border-white/10 bg-slate-900/80 p-6 shadow-2xl shadow-black/30">
-          <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+          <div>
             <div>
               <p className="text-sm font-semibold uppercase tracking-[0.3em] text-slate-400">Season</p>
               <h3 className="mt-1 text-2xl font-semibold text-white">{seasonSummary.season}</h3>
-            </div>
-            <div className="rounded-full border border-emerald-400/20 bg-emerald-400/10 px-4 py-2 text-sm font-medium text-emerald-300">
-              2025 season is marked as the most recently completed season
             </div>
           </div>
 

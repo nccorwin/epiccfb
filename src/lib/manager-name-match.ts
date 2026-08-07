@@ -101,3 +101,21 @@ export function isLikelySameManager(left: NameParts, right: NameParts) {
 
   return firstMatches && lastMatches;
 }
+
+export function findLikelyManagerMatch<T extends NameParts>(target: NameParts, candidates: T[]) {
+  const exactByUserId = candidates.find((candidate) => candidate.userId && target.userId && candidate.userId === target.userId);
+  if (exactByUserId) {
+    return exactByUserId;
+  }
+
+  const exactByEmail = candidates.find((candidate) =>
+    Boolean(candidate.email) &&
+    Boolean(target.email) &&
+    normalizeNamePart(candidate.email) === normalizeNamePart(target.email),
+  );
+  if (exactByEmail) {
+    return exactByEmail;
+  }
+
+  return candidates.find((candidate) => isLikelySameManager(target, candidate)) ?? null;
+}
