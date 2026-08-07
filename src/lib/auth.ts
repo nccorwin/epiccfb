@@ -37,6 +37,10 @@ export function createVerificationToken() {
   return randomBytes(32).toString("hex");
 }
 
+export function createPasswordResetToken() {
+  return randomBytes(32).toString("hex");
+}
+
 export function getRequestIp(headers: Headers | undefined) {
   const forwardedFor = headers?.get("x-forwarded-for") ?? "";
   return forwardedFor.split(",")[0]?.trim() || headers?.get("x-real-ip") || "unknown";

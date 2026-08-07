@@ -41,6 +41,8 @@ model User {
   emailVerified            Boolean              @default(false)
   verificationTokenHash    String?              @unique
   verificationTokenExpiresAt DateTime?
+  passwordResetTokenHash    String?              @unique
+  passwordResetTokenExpiresAt DateTime?
   verifiedAt                DateTime?
   role                      UserRole             @default(MANAGER)
   createdAt                 DateTime             @default(now())
