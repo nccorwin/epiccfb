@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { UserRole, type Prisma } from "@prisma/client";
 import { getCurrentUser } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
-import { resolveRosterSlotTypeForSelection, validateRosterSelection } from "@/lib/league-rules";
+import { getDraftPickNumber, resolveRosterSlotTypeForSelection, validateRosterSelection } from "@/lib/league-rules";
 
 const DRAFT_ROUNDS = 10;
 type DraftStatus = "NOT_STARTED" | "IN_PROGRESS" | "PAUSED" | "COMPLETED";
@@ -163,7 +163,7 @@ export async function POST(
 
   const round = Math.floor(pickCount / Math.max(userCount, 1)) + 1;
   const pickWithinRound = pickCount % Math.max(userCount, 1) + 1;
-  const pickNumber = pickWithinRound;
+  const pickNumber = getDraftPickNumber(round, pickWithinRound, userCount);
 
   const transactionResult = await prisma.$transaction(async (tx) => {
     const pick = await tx.draftPick.create({

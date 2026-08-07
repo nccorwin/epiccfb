@@ -47,6 +47,7 @@ type DraftPick = {
   id: string;
   round: number;
   pickNumber: number;
+  pickedAt?: string | null;
   user?: { id: string; name?: string | null; email: string } | null;
   team?: Team | null;
 };
@@ -65,6 +66,7 @@ const draftRequirements = [
   { label: "FCS", slot: "FCS", count: 2 },
   { label: "Wildcard", slot: "WILDCARD", count: 2 },
 ];
+type DraftSlot = (typeof draftRequirements)[number]["slot"];
 
 function formatTimeLeft(ms: number) {
   const totalSeconds = Math.max(0, Math.floor(ms / 1000));
@@ -74,24 +76,51 @@ function formatTimeLeft(ms: number) {
   return `${hours.toString().padStart(2, "0")}:${minutes.toString().padStart(2, "0")}:${seconds.toString().padStart(2, "0")}`;
 }
 
-function getTeamSlot(team: Team) {
-  const conferenceName = (team.conference?.name ?? "").toLowerCase();
+function normalizeConferenceName(conferenceName?: string | null) {
+  return conferenceName?.trim().toLowerCase() ?? "";
+}
+
+function isIndependentConference(conferenceName: string) {
+  return ["independent", "independents", "notre dame", "uconn"].some((token) => conferenceName.includes(token));
+}
+
+function getBaseSlotForTeam(team: Team): DraftSlot {
   if (team.isFcs) return "FCS";
-  if (conferenceName.includes("big ten") || conferenceName.includes("big 10")) return "BIG_TEN";
+  const conferenceName = normalizeConferenceName(team.conference?.name);
+  if (conferenceName.includes("big ten")) return "BIG_TEN";
   if (conferenceName.includes("big 12")) return "BIG_TWELVE";
   if (conferenceName.includes("sec")) return "SEC";
   if (conferenceName.includes("acc")) return "ACC";
-  if (
-    conferenceName.includes("american athletic") ||
-    conferenceName.includes("mac") ||
-    conferenceName.includes("mountain west") ||
-    conferenceName.includes("sun belt") ||
-    conferenceName.includes("conference usa") ||
-    conferenceName.includes("pac")
-  ) {
+  if (["mac", "mountain west", "pac-12", "sun belt"].some((name) => conferenceName.includes(name))) {
     return "GROUP_OF_FIVE";
   }
   return "WILDCARD";
+}
+
+function resolveTeamSlot(team: Team, existingSelections: Array<{ slotType: DraftSlot; team: Team }>): DraftSlot {
+  const baseSlotType = getBaseSlotForTeam(team);
+  const conferenceName = normalizeConferenceName(team.conference?.name);
+  const existingConferenceNames = existingSelections
+    .map((selection) => normalizeConferenceName(selection.team.conference?.name))
+    .filter(Boolean);
+
+  if (baseSlotType === "FCS") {
+    const existingFcsSlots = existingSelections.filter((selection) => selection.slotType === "FCS").length;
+    if (existingFcsSlots >= 2) {
+      return "WILDCARD";
+    }
+    return "FCS";
+  }
+
+  if (baseSlotType === "WILDCARD" || isIndependentConference(conferenceName)) {
+    return "WILDCARD";
+  }
+
+  if (existingConferenceNames.includes(conferenceName)) {
+    return "WILDCARD";
+  }
+
+  return baseSlotType;
 }
 
 function getDraftStatus(league: League | null): DraftStatus {
@@ -243,9 +272,34 @@ export default function DraftPage({ currentUser }: { currentUser: DraftPageUser 
   const userPicks = useMemo(() => picks.filter((pick) => pick.user?.id === currentUser.id), [currentUser.id, picks]);
 
   const completedCriteria = useMemo(() => {
+    const orderedUserPicks = [...userPicks].sort((left, right) => {
+      const leftDate = left.pickedAt ? new Date(left.pickedAt).getTime() : 0;
+      const rightDate = right.pickedAt ? new Date(right.pickedAt).getTime() : 0;
+      if (leftDate !== rightDate) {
+        return leftDate - rightDate;
+      }
+      if (left.round !== right.round) {
+        return left.round - right.round;
+      }
+      return left.pickNumber - right.pickNumber;
+    });
+
+    const assignedSelections: Array<{ slotType: DraftSlot; team: Team }> = [];
+    for (const pick of orderedUserPicks) {
+      if (!pick.team) {
+        continue;
+      }
+
+      const resolvedSlot = resolveTeamSlot(pick.team, assignedSelections);
+      assignedSelections.push({
+        slotType: resolvedSlot,
+        team: pick.team,
+      });
+    }
+
     return draftRequirements.map((requirement) => {
-      const count = userPicks.filter((pick) => pick.team && getTeamSlot(pick.team) === requirement.slot).length;
-      return { ...requirement, satisfied: count >= requirement.count };
+      const selected = assignedSelections.filter((selection) => selection.slotType === requirement.slot).length;
+      return { ...requirement, selected };
     });
   }, [userPicks]);
 
@@ -264,10 +318,13 @@ export default function DraftPage({ currentUser }: { currentUser: DraftPageUser 
     return null;
   }, [currentUser.id, draftIsComplete, draftStatus, pickCount, sortedMembers, totalPickCount, userCount]);
 
-  const pickByRoundAndNumber = useMemo(() => {
+  const pickByRoundAndUserId = useMemo(() => {
     const map = new Map<string, DraftPick>();
     for (const pick of picks) {
-      map.set(`${pick.round}-${pick.pickNumber}`, pick);
+      if (!pick.user?.id) {
+        continue;
+      }
+      map.set(`${pick.round}-${pick.user.id}`, pick);
     }
     return map;
   }, [picks]);
@@ -571,10 +628,26 @@ export default function DraftPage({ currentUser }: { currentUser: DraftPageUser 
                   key={criterion.slot}
                   className="flex items-center justify-between rounded-xl border border-white/10 bg-slate-950/50 px-3 py-2"
                 >
-                  <span className={criterion.satisfied ? "line-through text-slate-500" : "text-slate-200"}>
+                  <span className={criterion.selected >= criterion.count ? "line-through text-slate-500" : "text-slate-200"}>
                     {criterion.label}
                   </span>
-                  <span className="text-slate-400">{criterion.satisfied ? "Done" : "Pending"}</span>
+                  <span className="flex items-center gap-2">
+                    {Array.from({ length: criterion.count }).map((_, index) => {
+                      const checked = index < criterion.selected;
+                      return (
+                        <span
+                          key={`${criterion.slot}-checkbox-${index + 1}`}
+                          className={`inline-flex h-5 w-5 items-center justify-center rounded border text-xs font-semibold ${
+                            checked
+                              ? "border-emerald-400 bg-emerald-500/20 text-emerald-200"
+                              : "border-white/20 bg-transparent text-slate-500"
+                          }`}
+                        >
+                          {checked ? "✓" : ""}
+                        </span>
+                      );
+                    })}
+                  </span>
                 </li>
               ))}
             </ul>
@@ -611,8 +684,8 @@ export default function DraftPage({ currentUser }: { currentUser: DraftPageUser 
                       <td className="rounded-l-xl border border-white/10 bg-slate-950/70 px-4 py-3 font-medium text-white">
                         {round}
                       </td>
-                      {order.map((entry, orderIndex) => {
-                        const pick = pickByRoundAndNumber.get(`${round}-${orderIndex + 1}`);
+                      {order.map((entry) => {
+                        const pick = pickByRoundAndUserId.get(`${round}-${entry.user.id}`);
                         const isActiveCell =
                           activePickOwner?.user.id === entry.user.id &&
                           draftStatus === "IN_PROGRESS" &&
