@@ -50,7 +50,14 @@ export async function GET(
   const { leagueId } = await params;
   const picks = await prisma.draftPick.findMany({
     where: { leagueId },
-    include: { team: true, user: true },
+    include: {
+      team: {
+        include: {
+          conference: true,
+        },
+      },
+      user: true,
+    },
     orderBy: [{ round: "asc" }, { pickNumber: "asc" }],
   });
 

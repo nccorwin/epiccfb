@@ -4,7 +4,7 @@ import { useState } from "react";
 
 type ConferenceInfo = { id: string; name: string; shortName: string };
 type TeamInfo = { id: string; name: string; shortName: string | null; conference: ConferenceInfo };
-type UserInfo = { id: string; email: string; firstName: string | null; lastName: string | null; name: string | null };
+type UserInfo = { id: string; email: string; firstName: string | null; lastName: string | null; name: string | null; matchedEmail?: string | null };
 type LeagueMember = { id: string; userId: string; draftPosition: number | null; user: UserInfo };
 type LeagueInfo = { id: string; name: string; leagueUsers: LeagueMember[] };
 
@@ -65,6 +65,7 @@ export default function AdminPanel({ leagues, teams }: AdminPanelProps) {
 function DraftOrderSection({ leagues }: { leagues: LeagueInfo[] }) {
   const [selectedLeagueId, setSelectedLeagueId] = useState(leagues[0]?.id ?? "");
   const [saving, setSaving] = useState(false);
+  const [resetting, setResetting] = useState(false);
   const [feedback, setFeedback] = useState<{ type: "ok" | "err"; msg: string } | null>(null);
 
   const league = leagues.find((l) => l.id === selectedLeagueId);
@@ -133,6 +134,34 @@ function DraftOrderSection({ leagues }: { leagues: LeagueInfo[] }) {
     }
   }
 
+  async function handleResetDraft() {
+    if (!league) return;
+
+    const confirmed = window.confirm(
+      "Are you absolutely sure you want to reset this draft? This will permanently clear all draft picks and roster assignments for the selected league.",
+    );
+    if (!confirmed) {
+      return;
+    }
+
+    setResetting(true);
+    setFeedback(null);
+    try {
+      const res = await fetch("/api/admin/reset-draft", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ leagueId: selectedLeagueId }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error ?? "Unknown error");
+      setFeedback({ type: "ok", msg: data.message ?? "Draft reset successfully." });
+    } catch (err: unknown) {
+      setFeedback({ type: "err", msg: err instanceof Error ? err.message : "Draft reset failed." });
+    } finally {
+      setResetting(false);
+    }
+  }
+
   if (!league) {
     return <p className="text-slate-400">No leagues found.</p>;
   }
@@ -177,7 +206,7 @@ function DraftOrderSection({ leagues }: { leagues: LeagueInfo[] }) {
               <tr key={member.userId} className="border-b border-white/5 hover:bg-white/5">
                 <td className="px-4 py-3 font-mono text-emerald-400">{i + 1}</td>
                 <td className="px-4 py-3 font-medium">{displayName(member.user)}</td>
-                <td className="px-4 py-3 text-slate-400">{member.user.email}</td>
+                <td className="px-4 py-3 text-slate-400">{member.user.matchedEmail ?? member.user.email}</td>
                 <td className="px-4 py-3">
                   <div className="flex justify-center gap-1">
                     <button
@@ -212,13 +241,22 @@ function DraftOrderSection({ leagues }: { leagues: LeagueInfo[] }) {
         </p>
       )}
 
-      <button
-        onClick={handleSave}
-        disabled={saving}
-        className="rounded-full bg-emerald-500 px-6 py-2 text-sm font-semibold text-slate-950 transition hover:bg-emerald-400 disabled:opacity-50"
-      >
-        {saving ? "Saving…" : "Save Draft Order"}
-      </button>
+      <div className="flex flex-wrap gap-3">
+        <button
+          onClick={handleSave}
+          disabled={saving || resetting}
+          className="rounded-full bg-emerald-500 px-6 py-2 text-sm font-semibold text-slate-950 transition hover:bg-emerald-400 disabled:opacity-50"
+        >
+          {saving ? "Saving…" : "Save Draft Order"}
+        </button>
+        <button
+          onClick={handleResetDraft}
+          disabled={saving || resetting}
+          className="rounded-full bg-red-500 px-6 py-2 text-sm font-semibold text-white transition hover:bg-red-400 disabled:opacity-50"
+        >
+          {resetting ? "Resetting…" : "Reset Draft"}
+        </button>
+      </div>
     </div>
   );
 }

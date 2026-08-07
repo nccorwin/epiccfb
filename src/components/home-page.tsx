@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { canonicalizeTeamName } from "@/lib/team-name";
+import { isLikelySameManager } from "@/lib/manager-name-match";
 import {
   buildSeasonSummaries,
   fetchSeasonPeriodPayloads,
@@ -27,7 +28,17 @@ function displayRecord(wins: number, losses: number, pushes: number) {
   return `${wins}-${losses}${pushes ? `-${pushes}` : ""}`;
 }
 
-export default function HomePage({ currentUserId }: { currentUserId: string }) {
+export default function HomePage({
+  currentUser,
+}: {
+  currentUser: {
+    id: string;
+    email: string;
+    firstName: string | null;
+    lastName: string | null;
+    name: string | null;
+  };
+}) {
   const [seasonHistory, setSeasonHistory] = useState<SeasonHistoryManager[]>([]);
   const [periodSummaries, setPeriodSummaries] = useState<Record<string, PeriodSummary[]>>({});
   const [allTeamStats, setAllTeamStats] = useState<Record<string, TeamSummary>>({});
@@ -59,6 +70,7 @@ export default function HomePage({ currentUserId }: { currentUserId: string }) {
   }, []);
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     void loadData();
   }, [loadData]);
 
@@ -66,23 +78,48 @@ export default function HomePage({ currentUserId }: { currentUserId: string }) {
     return [...seasonHistory].sort((left, right) => left.finalRank - right.finalRank);
   }, [seasonHistory]);
 
-  const postseasonSummaryKey = getSeasonPeriodKey(POSTSEASON_PERIOD.value);
-  const postseasonSummaries = periodSummaries[postseasonSummaryKey] ?? [];
   const postseasonSummaryByManager = useMemo(() => {
+    const postseasonSummaryKey = getSeasonPeriodKey(POSTSEASON_PERIOD.value);
+    const postseasonSummaries = periodSummaries[postseasonSummaryKey] ?? [];
     const map = new Map<string, PeriodSummary>();
     for (const summary of postseasonSummaries) {
       map.set(summary.manager.key, summary);
     }
     return map;
-  }, [postseasonSummaries]);
+  }, [periodSummaries]);
 
   const me = useMemo(() => {
-    return seasonHistory.find((manager) => manager.userId === currentUserId) ?? null;
-  }, [seasonHistory, currentUserId]);
+    const exactByUserId = seasonHistory.find((manager) => manager.userId === currentUser.id);
+    if (exactByUserId) {
+      return exactByUserId;
+    }
+
+    const exactByEmail = seasonHistory.find((manager) => manager.email?.toLowerCase() === currentUser.email.toLowerCase());
+    if (exactByEmail) {
+      return exactByEmail;
+    }
+
+    return seasonHistory.find((manager) =>
+      isLikelySameManager(
+        {
+          userId: currentUser.id,
+          email: currentUser.email,
+          firstName: currentUser.firstName,
+          lastName: currentUser.lastName,
+          displayName: currentUser.name,
+        },
+        manager,
+      ),
+    ) ?? null;
+  }, [currentUser.email, currentUser.firstName, currentUser.id, currentUser.lastName, currentUser.name, seasonHistory]);
 
   const myStats = me ? postseasonSummaryByManager.get(me.key) ?? null : null;
   const myRank = me?.finalRank ?? null;
-  const myName = me?.displayName ?? "You";
+  const fallbackCurrentUserName =
+    [currentUser.firstName, currentUser.lastName].filter(Boolean).join(" ").trim() ||
+    currentUser.name ||
+    currentUser.email;
+  const myName = me?.displayName ?? fallbackCurrentUserName;
 
   if (loading) {
     return (
@@ -163,13 +200,12 @@ export default function HomePage({ currentUserId }: { currentUserId: string }) {
                 <th className="pb-3 pr-4 text-right">Record</th>
                 <th className="pb-3 pr-4 text-right">ATS</th>
                 <th className="pb-3 pr-4 text-right">Wk 17 pts</th>
-                <th className="pb-3 pr-4 text-right">API pts</th>
                 <th className="pb-3 text-right">Final pts (CSV)</th>
               </tr>
             </thead>
             <tbody>
               {standings.map((manager) => {
-                const isSelf = manager.userId === currentUserId;
+                const isSelf = me?.key === manager.key || manager.userId === currentUser.id;
                 const stats = postseasonSummaryByManager.get(manager.key) ?? null;
                 return (
                   <tr
@@ -189,9 +225,6 @@ export default function HomePage({ currentUserId }: { currentUserId: string }) {
                     </td>
                     <td className="py-3 pr-4 text-right tabular-nums text-emerald-300">
                       +{stats ? stats.weekly.weeklyPoints.toFixed(1) : "0.0"}
-                    </td>
-                    <td className="py-3 pr-4 text-right tabular-nums text-slate-300">
-                      {stats ? stats.cumulativePoints.toFixed(1) : "0.0"}
                     </td>
                     <td className="py-3 text-right tabular-nums font-bold text-white">{manager.totalPoints.toFixed(1)}</td>
                   </tr>

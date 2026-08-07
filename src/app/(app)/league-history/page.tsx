@@ -9,5 +9,5 @@ export default async function LeagueHistoryRoutePage() {
     redirect("/login");
   }
 
-  return <LeagueHistoryPage />;
+  return <LeagueHistoryPage isAdmin={currentUser.role === "ADMIN"} />;
 }

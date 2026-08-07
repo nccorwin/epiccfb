@@ -11,6 +11,7 @@ export type SeasonHistoryManager = {
   firstName: string | null;
   lastName: string | null;
   userId: string | null;
+  email: string | null;
   displayName: string;
   teams: string[];
 };

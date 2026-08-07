@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { createVerificationToken, hashPassword, hashToken } from "@/lib/auth";
+import { isLikelySameManager } from "@/lib/manager-name-match";
 import { prisma } from "@/lib/prisma";
 import { sendVerificationEmail } from "@/lib/email";
 
@@ -43,22 +44,46 @@ export async function POST(request: Request) {
     },
   });
 
-  await prisma.leagueHistoryEntry.updateMany({
+  const unmatchedHistoryEntries = await prisma.leagueHistoryEntry.findMany({
     where: {
       userId: null,
-      firstName: {
-        equals: firstName,
-        mode: "insensitive",
-      },
-      lastName: {
-        equals: lastName,
-        mode: "insensitive",
-      },
     },
-    data: {
-      userId: user.id,
+    select: {
+      id: true,
+      firstName: true,
+      lastName: true,
     },
   });
+
+  const matchingHistoryIds = unmatchedHistoryEntries
+    .filter((entry) =>
+      isLikelySameManager(
+        {
+          firstName,
+          lastName,
+          displayName: `${firstName} ${lastName}`.trim(),
+        },
+        {
+          firstName: entry.firstName,
+          lastName: entry.lastName,
+          displayName: `${entry.firstName ?? ""} ${entry.lastName ?? ""}`.trim(),
+        },
+      ),
+    )
+    .map((entry) => entry.id);
+
+  if (matchingHistoryIds.length > 0) {
+    await prisma.leagueHistoryEntry.updateMany({
+      where: {
+        id: {
+          in: matchingHistoryIds,
+        },
+      },
+      data: {
+        userId: user.id,
+      },
+    });
+  }
 
   const origin = new URL(request.url).origin;
   const verificationUrl = `${origin}/verify-email?token=${encodeURIComponent(verificationToken)}`;

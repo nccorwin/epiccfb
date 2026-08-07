@@ -37,7 +37,7 @@ function displayName(record: HistoryRecord) {
   return "Unmatched manager";
 }
 
-export default async function LeagueHistoryPage() {
+export default async function LeagueHistoryPage({ isAdmin = false }: { isAdmin?: boolean }) {
   const records = await prisma.leagueHistoryEntry.findMany({
     include: { user: true },
     orderBy: [{ season: "desc" }, { finalRank: "asc" }, { teamName: "asc" }],
@@ -122,7 +122,13 @@ export default async function LeagueHistoryPage() {
                     <td className="px-4 py-3 font-semibold text-emerald-400">#{manager.finalRank}</td>
                     <td className="px-4 py-3">
                       <div className="font-medium text-white">{manager.displayName}</div>
-                      {manager.userId ? <div className="mt-1 text-xs uppercase tracking-[0.2em] text-slate-500">Linked account</div> : <div className="mt-1 text-xs uppercase tracking-[0.2em] text-amber-400">Pending account match</div>}
+                      {isAdmin ? (
+                        manager.userId ? (
+                          <div className="mt-1 text-xs uppercase tracking-[0.2em] text-slate-500">Linked account</div>
+                        ) : (
+                          <div className="mt-1 text-xs uppercase tracking-[0.2em] text-amber-400">Pending account match</div>
+                        )
+                      ) : null}
                     </td>
                     <td className="px-4 py-3 text-slate-200">{manager.totalPoints.toFixed(1)}</td>
                     <td className="px-4 py-3 text-slate-300">{manager.teams.join(", ")}</td>

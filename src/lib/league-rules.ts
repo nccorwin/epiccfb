@@ -32,11 +32,20 @@ export function getBaseRosterSlotTypeForTeam(team: TeamLike): RosterSlotType | n
   if (team.isFcs) return RosterSlotType.FCS;
 
   const conferenceName = normalizeConferenceName(team.conference?.name);
-  if (conferenceName.includes("big ten")) return RosterSlotType.BIG_TEN;
+  if (conferenceName.includes("big ten") || conferenceName.includes("big 10")) return RosterSlotType.BIG_TEN;
   if (conferenceName.includes("big 12")) return RosterSlotType.BIG_TWELVE;
   if (conferenceName.includes("sec")) return RosterSlotType.SEC;
   if (conferenceName.includes("acc")) return RosterSlotType.ACC;
-  if (["mac", "mountain west", "pac-12", "sun belt"].some((name) => conferenceName.includes(name))) {
+  if (
+    [
+      "american athletic",
+      "conference usa",
+      "mac",
+      "mountain west",
+      "pac",
+      "sun belt",
+    ].some((name) => conferenceName.includes(name))
+  ) {
     return RosterSlotType.GROUP_OF_FIVE;
   }
 

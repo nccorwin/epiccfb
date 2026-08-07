@@ -87,11 +87,20 @@ function isIndependentConference(conferenceName: string) {
 function getBaseSlotForTeam(team: Team): DraftSlot {
   if (team.isFcs) return "FCS";
   const conferenceName = normalizeConferenceName(team.conference?.name);
-  if (conferenceName.includes("big ten")) return "BIG_TEN";
+  if (conferenceName.includes("big ten") || conferenceName.includes("big 10")) return "BIG_TEN";
   if (conferenceName.includes("big 12")) return "BIG_TWELVE";
   if (conferenceName.includes("sec")) return "SEC";
   if (conferenceName.includes("acc")) return "ACC";
-  if (["mac", "mountain west", "pac-12", "sun belt"].some((name) => conferenceName.includes(name))) {
+  if (
+    [
+      "american athletic",
+      "conference usa",
+      "mac",
+      "mountain west",
+      "pac",
+      "sun belt",
+    ].some((name) => conferenceName.includes(name))
+  ) {
     return "GROUP_OF_FIVE";
   }
   return "WILDCARD";
@@ -144,6 +153,11 @@ function getPickerForPickIndex(pickIndex: number, sortedMembers: LeagueUser[]) {
   const pickWithinRound = pickIndex % sortedMembers.length;
   const roundOrder = round % 2 === 1 ? sortedMembers : [...sortedMembers].reverse();
   return roundOrder[pickWithinRound] ?? null;
+}
+
+function getMemberDisplayName(member: LeagueUser["user"]) {
+  const fullName = [member.firstName, member.lastName].filter(Boolean).join(" ").trim();
+  return fullName || member.name || member.email;
 }
 
 export default function DraftPage({ currentUser }: { currentUser: DraftPageUser }) {
@@ -519,7 +533,7 @@ export default function DraftPage({ currentUser }: { currentUser: DraftPageUser 
           </div>
           <div className="mt-6 space-y-3">
             {sortedMembers.map((entry) => {
-              const memberName = entry.user.name ?? entry.user.email;
+              const memberName = getMemberDisplayName(entry.user);
               const position = draftOrder[entry.user.id] ?? entry.draftPosition ?? 1;
               return (
                 <div
@@ -528,7 +542,6 @@ export default function DraftPage({ currentUser }: { currentUser: DraftPageUser 
                 >
                   <div>
                     <p className="font-medium text-white">{memberName}</p>
-                    <p className="text-sm text-slate-400">{entry.user.username ?? entry.user.email}</p>
                   </div>
                   {isAdmin ? (
                     <div className="flex items-center gap-2">
@@ -678,13 +691,12 @@ export default function DraftPage({ currentUser }: { currentUser: DraftPageUser 
               <tbody>
                 {Array.from({ length: roundCount }).map((_, roundIndex) => {
                   const round = roundIndex + 1;
-                  const order = round % 2 === 1 ? sortedMembers : [...sortedMembers].reverse();
                   return (
                     <tr key={round}>
                       <td className="rounded-l-xl border border-white/10 bg-slate-950/70 px-4 py-3 font-medium text-white">
                         {round}
                       </td>
-                      {order.map((entry) => {
+                      {sortedMembers.map((entry) => {
                         const pick = pickByRoundAndUserId.get(`${round}-${entry.user.id}`);
                         const isActiveCell =
                           activePickOwner?.user.id === entry.user.id &&
