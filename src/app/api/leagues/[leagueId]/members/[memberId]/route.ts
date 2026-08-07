@@ -1,10 +1,16 @@
 import { NextResponse } from "next/server";
+import { getCurrentUser } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 
 export async function PATCH(
   request: Request,
   { params }: { params: Promise<{ leagueId: string; memberId: string }> },
 ) {
+  const currentUser = await getCurrentUser();
+  if (!currentUser || currentUser.role !== "ADMIN") {
+    return NextResponse.json({ error: "Forbidden." }, { status: 403 });
+  }
+
   const { leagueId, memberId } = await params;
   const body = await request.json();
   const draftPosition = Number(body?.draftPosition);

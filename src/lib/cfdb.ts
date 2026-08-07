@@ -160,51 +160,8 @@ async function readCachedPostseasonData(season: number): Promise<CachedScoreboar
   return postseason;
 }
 
-async function getSupplementalFcsSecondRoundData(season: number) {
-  const [games, lines] = await Promise.all([
-    getGamesWithFcs({ year: season, week: 15, seasonType: "regular" }),
-    getLinesWithFcsByQuery({ year: season, week: 15, seasonType: "regular" }),
-  ]);
-
-  const secondRoundGames = games.filter((game) => game.notes?.includes("FCS Championship - Second Round"));
-  if (secondRoundGames.length === 0) {
-    return {
-      games: [] as CfdbGameResult[],
-      lines: [] as CfdbLineResponse[],
-    };
-  }
-
-  const secondRoundGameIds = new Set(secondRoundGames.map((game) => game.id));
-  const secondRoundLines = lines.filter((line) => secondRoundGameIds.has(line.id));
-
-  return {
-    games: secondRoundGames,
-    lines: secondRoundLines,
-  };
-}
-
-function mergePostseasonData(
-  base: CachedScoreboardPostseasonData,
-  supplemental: { games: CfdbGameResult[]; lines: CfdbLineResponse[] },
-): CachedScoreboardPostseasonData {
-  const gamesById = new Map(base.games.map((game) => [game.id, game] as const));
-  for (const game of supplemental.games) {
-    gamesById.set(game.id, game);
-  }
-
-  const linesById = new Map(base.lines.map((line) => [line.id, line] as const));
-  for (const line of supplemental.lines) {
-    linesById.set(line.id, line);
-  }
-
-  const games = sortGamesByStartDate(Array.from(gamesById.values()));
-
-  return {
-    games,
-    lines: Array.from(linesById.values()),
-    cfpGameIds: base.cfpGameIds,
-    cfpMatchupInfo: base.cfpMatchupInfo,
-  };
+function isFcsSecondRoundGame(game: Pick<CfdbGameResult, "notes">) {
+  return Boolean(game.notes && game.notes.includes("FCS Championship - Second Round"));
 }
 
 function sortGamesByStartDate(games: CfdbGameResult[]) {
@@ -450,7 +407,7 @@ export async function getWeekData(season: number, week: number) {
 export async function getPostseasonGames(season: number): Promise<CfdbGameResult[]> {
   const cached = await readCachedPostseasonData(season);
   if (cached) {
-    return cached.games;
+    return cached.games.filter((game) => !isFcsSecondRoundGame(game));
   }
 
   const postseasonWeeks = [16, 17, 18, 19, 20, 21];
@@ -468,7 +425,7 @@ export async function getPostseasonGames(season: number): Promise<CfdbGameResult
     }
   }
 
-  return Array.from(merged.values());
+  return Array.from(merged.values()).filter((game) => !isFcsSecondRoundGame(game));
 }
 
 export async function getPostseasonLines(season: number): Promise<CfdbLineResponse[]> {
@@ -565,18 +522,14 @@ export async function getPostseasonData(season: number) {
   })();
 
   const priorFcsFirstRoundTeams = await getPriorFcsFirstRoundTeams(season, 14);
-
-  const supplemental = await getSupplementalFcsSecondRoundData(season);
-  if (supplemental.games.length === 0 && supplemental.lines.length === 0) {
-    return {
-      ...base,
-      games: sortGamesByStartDate([...base.games]),
-      priorFcsFirstRoundTeams,
-    };
-  }
+  const postseasonGames = sortGamesByStartDate(base.games.filter((game) => !isFcsSecondRoundGame(game)));
+  const postseasonGameIds = new Set(postseasonGames.map((game) => game.id));
+  const postseasonLines = base.lines.filter((line) => postseasonGameIds.has(line.id));
 
   return {
-    ...mergePostseasonData(base, supplemental),
+    ...base,
+    games: postseasonGames,
+    lines: postseasonLines,
     priorFcsFirstRoundTeams,
   };
 }

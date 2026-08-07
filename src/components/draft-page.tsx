@@ -9,23 +9,30 @@ export type DraftPageUser = {
   firstName: string | null;
   lastName: string | null;
   name: string | null;
+  role: "ADMIN" | "MANAGER";
+};
+
+type LeagueUser = {
+  id: string;
+  draftPosition?: number | null;
+  user: {
+    id: string;
+    email: string;
+    name?: string | null;
+    firstName?: string | null;
+    lastName?: string | null;
+    username?: string | null;
+  };
 };
 
 type League = {
   id: string;
   name: string;
-  leagueUsers: Array<{
-    id: string;
-    draftPosition?: number | null;
-    user: {
-      id: string;
-      email: string;
-      name?: string | null;
-      firstName?: string | null;
-      lastName?: string | null;
-      username?: string | null;
-    };
-  }>;
+  settings?: {
+    draftStatus?: string;
+    currentPickStartedAt?: string | null;
+  } | null;
+  leagueUsers: LeagueUser[];
 };
 
 type Team = {
@@ -43,6 +50,11 @@ type DraftPick = {
   user?: { id: string; name?: string | null; email: string } | null;
   team?: Team | null;
 };
+
+type DraftStatus = "NOT_STARTED" | "IN_PROGRESS" | "PAUSED" | "COMPLETED";
+
+const DRAFT_ROUNDS = 10;
+const PICK_WINDOW_MS = 48 * 60 * 60 * 1000;
 
 const draftRequirements = [
   { label: "Big Ten", slot: "BIG_TEN", count: 1 },
@@ -69,54 +81,65 @@ function getTeamSlot(team: Team) {
   if (conferenceName.includes("big 12")) return "BIG_TWELVE";
   if (conferenceName.includes("sec")) return "SEC";
   if (conferenceName.includes("acc")) return "ACC";
-  if (conferenceName.includes("mac") || conferenceName.includes("mountain west") || conferenceName.includes("sun belt") || conferenceName.includes("pac") || conferenceName.includes("pac-12")) return "GROUP_OF_FIVE";
+  if (
+    conferenceName.includes("american athletic") ||
+    conferenceName.includes("mac") ||
+    conferenceName.includes("mountain west") ||
+    conferenceName.includes("sun belt") ||
+    conferenceName.includes("conference usa") ||
+    conferenceName.includes("pac")
+  ) {
+    return "GROUP_OF_FIVE";
+  }
   return "WILDCARD";
+}
+
+function getDraftStatus(league: League | null): DraftStatus {
+  const rawStatus = league?.settings?.draftStatus ?? "NOT_STARTED";
+  if (rawStatus === "IN_PROGRESS" || rawStatus === "PAUSED" || rawStatus === "COMPLETED") {
+    return rawStatus;
+  }
+  return "NOT_STARTED";
+}
+
+function getCurrentPickStartedAt(league: League | null): string | null {
+  return typeof league?.settings?.currentPickStartedAt === "string" ? league.settings.currentPickStartedAt : null;
+}
+
+function getPickerForPickIndex(pickIndex: number, sortedMembers: LeagueUser[]) {
+  if (sortedMembers.length === 0) {
+    return null;
+  }
+
+  const round = Math.floor(pickIndex / sortedMembers.length) + 1;
+  const pickWithinRound = pickIndex % sortedMembers.length;
+  const roundOrder = round % 2 === 1 ? sortedMembers : [...sortedMembers].reverse();
+  return roundOrder[pickWithinRound] ?? null;
 }
 
 export default function DraftPage({ currentUser }: { currentUser: DraftPageUser }) {
   const [league, setLeague] = useState<League | null>(null);
   const [teams, setTeams] = useState<Team[]>([]);
   const [picks, setPicks] = useState<DraftPick[]>([]);
-  const [selectedMemberId, setSelectedMemberId] = useState(currentUser.id);
   const [selectedTeamId, setSelectedTeamId] = useState("");
   const [draftOrder, setDraftOrder] = useState<Record<string, number>>({});
   const [message, setMessage] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
-  const [deadline, setDeadline] = useState<number | null>(null);
+  const [statusSubmitting, setStatusSubmitting] = useState(false);
   const [now, setNow] = useState(Date.now());
+
+  const isAdmin = currentUser.role === "ADMIN";
 
   useEffect(() => {
     void loadDraftData();
   }, []);
 
-  useEffect(() => {
-    if (!deadline) {
-      return;
+  async function loadDraftData(options?: { soft?: boolean }) {
+    if (!options?.soft) {
+      setLoading(true);
+      setMessage(null);
     }
-
-    const timer = window.setInterval(() => {
-      setNow(Date.now());
-    }, 1000);
-
-    return () => window.clearInterval(timer);
-  }, [deadline]);
-
-  useEffect(() => {
-    if (league?.leagueUsers.length) {
-      setSelectedMemberId((current) => current || league.leagueUsers[0].user.id);
-    }
-  }, [league]);
-
-  useEffect(() => {
-    if (teams.length && !selectedTeamId) {
-      setSelectedTeamId(teams[0]?.id ?? "");
-    }
-  }, [teams, selectedTeamId]);
-
-  async function loadDraftData() {
-    setLoading(true);
-    setMessage(null);
 
     try {
       const leagueResponse = await fetch("/api/leagues");
@@ -124,14 +147,14 @@ export default function DraftPage({ currentUser }: { currentUser: DraftPageUser 
         throw new Error("Unable to load the league.");
       }
       const leaguePayload = await leagueResponse.json();
-      const activeLeague = Array.isArray(leaguePayload) ? leaguePayload[0] : null;
+      const activeLeague = (Array.isArray(leaguePayload) ? leaguePayload[0] : null) as League | null;
       if (!activeLeague) {
         throw new Error("No active league was found.");
       }
       setLeague(activeLeague);
       setDraftOrder(
         Object.fromEntries(
-          (activeLeague.leagueUsers ?? []).map((entry: { user: { id: string }; draftPosition?: number | null }) => [entry.user.id, entry.draftPosition ?? 1]),
+          (activeLeague.leagueUsers ?? []).map((entry) => [entry.user.id, entry.draftPosition ?? 1]),
         ),
       );
 
@@ -148,16 +171,111 @@ export default function DraftPage({ currentUser }: { currentUser: DraftPageUser 
       }
       const picksPayload = await picksResponse.json();
       setPicks(Array.isArray(picksPayload) ? picksPayload : []);
-      setDeadline(Date.now() + 72 * 60 * 60 * 1000);
     } catch (error) {
       setMessage(error instanceof Error ? error.message : "Unable to load draft data.");
     } finally {
-      setLoading(false);
+      if (!options?.soft) {
+        setLoading(false);
+      }
     }
   }
 
+  const sortedMembers = useMemo(() => {
+    if (!league?.leagueUsers?.length) return [];
+    return [...league.leagueUsers].sort((left, right) => {
+      const leftPosition = draftOrder[left.user.id] ?? left.draftPosition ?? Number.MAX_SAFE_INTEGER;
+      const rightPosition = draftOrder[right.user.id] ?? right.draftPosition ?? Number.MAX_SAFE_INTEGER;
+      return leftPosition - rightPosition;
+    });
+  }, [draftOrder, league]);
+
+  const draftStatus = getDraftStatus(league);
+  const currentPickStartedAt = getCurrentPickStartedAt(league);
+  const userCount = sortedMembers.length;
+  const totalPickCount = userCount * DRAFT_ROUNDS;
+  const pickCount = picks.length;
+  const draftIsComplete = draftStatus === "COMPLETED" || (totalPickCount > 0 && pickCount >= totalPickCount);
+  const activePickOwner =
+    draftStatus === "IN_PROGRESS" && !draftIsComplete
+      ? getPickerForPickIndex(pickCount, sortedMembers)
+      : null;
+  const isMyTurn = activePickOwner?.user.id === currentUser.id;
+  const deadlineAt =
+    draftStatus === "IN_PROGRESS" && currentPickStartedAt
+      ? new Date(currentPickStartedAt).getTime() + PICK_WINDOW_MS
+      : null;
+
+  useEffect(() => {
+    if (!deadlineAt) {
+      return;
+    }
+
+    const timer = window.setInterval(() => {
+      setNow(Date.now());
+    }, 1000);
+
+    return () => window.clearInterval(timer);
+  }, [deadlineAt]);
+
+  useEffect(() => {
+    if (draftStatus !== "IN_PROGRESS") {
+      return;
+    }
+
+    const poller = window.setInterval(() => {
+      void loadDraftData({ soft: true });
+    }, 30000);
+
+    return () => window.clearInterval(poller);
+  }, [draftStatus]);
+
+  const availableTeams = useMemo(() => {
+    const pickedTeamIds = new Set(picks.map((pick) => pick.team?.id).filter((id): id is string => Boolean(id)));
+    return teams
+      .filter((team) => !pickedTeamIds.has(team.id))
+      .sort((left, right) => left.name.localeCompare(right.name));
+  }, [picks, teams]);
+  const effectiveSelectedTeamId =
+    selectedTeamId && availableTeams.some((team) => team.id === selectedTeamId)
+      ? selectedTeamId
+      : (availableTeams[0]?.id ?? "");
+
+  const userPicks = useMemo(() => picks.filter((pick) => pick.user?.id === currentUser.id), [currentUser.id, picks]);
+
+  const completedCriteria = useMemo(() => {
+    return draftRequirements.map((requirement) => {
+      const count = userPicks.filter((pick) => pick.team && getTeamSlot(pick.team) === requirement.slot).length;
+      return { ...requirement, satisfied: count >= requirement.count };
+    });
+  }, [userPicks]);
+
+  const nextPicksUntilSelection = useMemo(() => {
+    if (draftStatus !== "IN_PROGRESS" || draftIsComplete || userCount === 0) {
+      return null;
+    }
+
+    for (let nextPickIndex = pickCount; nextPickIndex < totalPickCount; nextPickIndex += 1) {
+      const picker = getPickerForPickIndex(nextPickIndex, sortedMembers);
+      if (picker?.user.id === currentUser.id) {
+        return nextPickIndex - pickCount;
+      }
+    }
+
+    return null;
+  }, [currentUser.id, draftIsComplete, draftStatus, pickCount, sortedMembers, totalPickCount, userCount]);
+
+  const pickByRoundAndNumber = useMemo(() => {
+    const map = new Map<string, DraftPick>();
+    for (const pick of picks) {
+      map.set(`${pick.round}-${pick.pickNumber}`, pick);
+    }
+    return map;
+  }, [picks]);
+
+  const roundCount = Math.max(DRAFT_ROUNDS, Math.ceil((pickCount + 1) / Math.max(userCount, 1)));
+
   async function handleDraftOrderUpdate(memberId: string, draftPosition: number) {
-    if (!league) return;
+    if (!league || !isAdmin) return;
 
     const response = await fetch(`/api/leagues/${league.id}/members/${memberId}`, {
       method: "PATCH",
@@ -173,12 +291,39 @@ export default function DraftPage({ currentUser }: { currentUser: DraftPageUser 
 
     setDraftOrder((current) => ({ ...current, [memberId]: draftPosition }));
     setMessage("Draft order updated.");
-    await loadDraftData();
+    await loadDraftData({ soft: true });
+  }
+
+  async function handleDraftStatusAction(action: "start" | "pause" | "resume") {
+    if (!league || !isAdmin) return;
+
+    setStatusSubmitting(true);
+    setMessage(null);
+
+    try {
+      const response = await fetch("/api/admin/draft-status", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ leagueId: league.id, action }),
+      });
+
+      const payload = await response.json().catch(() => ({}));
+      if (!response.ok) {
+        throw new Error(payload.error ?? "Unable to update draft status.");
+      }
+
+      setMessage(action === "start" ? "Draft started." : action === "pause" ? "Draft paused." : "Draft resumed.");
+      await loadDraftData({ soft: true });
+    } catch (error) {
+      setMessage(error instanceof Error ? error.message : "Unable to update draft status.");
+    } finally {
+      setStatusSubmitting(false);
+    }
   }
 
   async function handleSubmitPick(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    if (!league) return;
+    if (!league || !effectiveSelectedTeamId || !activePickOwner) return;
 
     setSubmitting(true);
     setMessage(null);
@@ -187,17 +332,16 @@ export default function DraftPage({ currentUser }: { currentUser: DraftPageUser 
       const response = await fetch(`/api/leagues/${league.id}/picks`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ userId: selectedMemberId, teamId: selectedTeamId }),
+        body: JSON.stringify({ teamId: effectiveSelectedTeamId, userId: activePickOwner.user.id }),
       });
 
-      const payload = await response.json();
+      const payload = await response.json().catch(() => ({}));
       if (!response.ok) {
         throw new Error(payload.error ?? "Unable to submit pick.");
       }
 
-      await loadDraftData();
-      setDeadline(Date.now() + 72 * 60 * 60 * 1000);
       setMessage("Draft pick submitted.");
+      await loadDraftData({ soft: true });
     } catch (error) {
       setMessage(error instanceof Error ? error.message : "Unable to submit pick.");
     } finally {
@@ -205,23 +349,28 @@ export default function DraftPage({ currentUser }: { currentUser: DraftPageUser 
     }
   }
 
-  const sortedMembers = useMemo(() => {
-    if (!league?.leagueUsers?.length) return [];
-    return [...league.leagueUsers].sort((left, right) => {
-      const leftPosition = draftOrder[left.user.id] ?? left.draftPosition ?? 1;
-      const rightPosition = draftOrder[right.user.id] ?? right.draftPosition ?? 1;
-      return leftPosition - rightPosition;
-    });
-  }, [draftOrder, league]);
+  const canShowSubmitForm = draftStatus === "IN_PROGRESS" && !draftIsComplete && (isAdmin || isMyTurn);
 
-  const roundCount = Math.max(10, Math.ceil((picks.length + 1) / Math.max(sortedMembers.length, 1)) + 1);
-  const availableTeams = teams.filter((team) => !picks.some((pick) => pick.team?.id === team.id));
-
-  const userPicks = picks.filter((pick) => pick.user?.id === currentUser.id);
-  const completedCriteria = draftRequirements.map((requirement) => {
-    const count = userPicks.filter((pick) => getTeamSlot(pick.team as Team) === requirement.slot).length;
-    return { ...requirement, satisfied: count >= requirement.count };
-  });
+  const clockLabel = draftIsComplete
+    ? "Draft complete"
+    : draftStatus === "NOT_STARTED"
+      ? "Draft not started"
+      : draftStatus === "PAUSED"
+        ? "Draft paused"
+        : deadlineAt
+          ? formatTimeLeft(deadlineAt - now)
+          : "--:--:--";
+  const exactDeadlineLabel = deadlineAt
+    ? new Date(deadlineAt).toLocaleString("en-US", {
+      month: "short",
+      day: "numeric",
+      year: "numeric",
+      hour: "numeric",
+      minute: "2-digit",
+      second: "2-digit",
+      timeZoneName: "short",
+    })
+    : null;
 
   return (
     <div className="space-y-6">
@@ -231,13 +380,15 @@ export default function DraftPage({ currentUser }: { currentUser: DraftPageUser 
             <p className="text-sm font-semibold uppercase tracking-[0.3em] text-emerald-400">2026 draft board</p>
             <h2 className="mt-2 text-3xl font-semibold text-white">Draft clock and board</h2>
             <p className="mt-3 max-w-2xl text-sm leading-7 text-slate-300">
-              This draft uses a 72-hour turn clock per selection. The board below is auto-populated as picks are submitted.
+              The draft starts only when an admin clicks Start Draft. Each pick then has a universal 48-hour clock.
             </p>
           </div>
           <div className="rounded-2xl border border-emerald-400/20 bg-emerald-400/10 px-5 py-4 text-center">
             <p className="text-xs uppercase tracking-[0.25em] text-emerald-300">Clock</p>
-            <p className="mt-2 text-3xl font-semibold text-white">{deadline ? formatTimeLeft(deadline - now) : "--:--:--"}</p>
-            <p className="mt-1 text-sm text-slate-300">Next pick window</p>
+            <p className="mt-2 text-3xl font-semibold text-white">{clockLabel}</p>
+            <p className="mt-1 text-sm text-slate-300">
+              {activePickOwner ? `On the clock: ${activePickOwner.user.name ?? activePickOwner.user.email}` : "Waiting for admin action"}
+            </p>
           </div>
         </div>
       </section>
@@ -246,79 +397,183 @@ export default function DraftPage({ currentUser }: { currentUser: DraftPageUser 
         <div className="rounded-2xl border border-emerald-400/20 bg-emerald-400/10 px-4 py-3 text-sm text-emerald-200">{message}</div>
       ) : null}
 
+      {isAdmin ? (
+        <section className="rounded-3xl border border-amber-400/20 bg-amber-400/10 p-5">
+          <p className="text-xs font-semibold uppercase tracking-[0.2em] text-amber-200">Admin indicator</p>
+          <div className="mt-2 space-y-1 text-sm text-amber-100">
+            <p>
+              <span className="font-semibold">On the clock:</span>{" "}
+              {activePickOwner ? (activePickOwner.user.name ?? activePickOwner.user.email) : "None"}
+            </p>
+            <p>
+              <span className="font-semibold">Deadline:</span>{" "}
+              {draftStatus === "IN_PROGRESS" && exactDeadlineLabel ? exactDeadlineLabel : "Not active"}
+            </p>
+          </div>
+        </section>
+      ) : null}
+
       <div className="grid gap-6 xl:grid-cols-[1.2fr_0.8fr]">
         <section className="rounded-3xl border border-white/10 bg-slate-900/80 p-6 shadow-2xl shadow-black/30">
-          <div className="flex items-center justify-between gap-3">
+          <div className="flex flex-wrap items-center justify-between gap-3">
             <div>
               <h3 className="text-xl font-semibold text-white">Draft order</h3>
-              <p className="mt-1 text-sm text-slate-400">Set the manual order before the draft starts.</p>
+              <p className="mt-1 text-sm text-slate-400">Only admins can set the order before the draft starts.</p>
             </div>
-            <button type="button" onClick={() => void loadDraftData()} className="rounded-full border border-white/10 px-3 py-2 text-sm text-slate-300 hover:bg-white/10">
-              Refresh
-            </button>
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={() => void loadDraftData()}
+                className="rounded-full border border-white/10 px-3 py-2 text-sm text-slate-300 hover:bg-white/10"
+              >
+                Refresh
+              </button>
+              {isAdmin && draftStatus === "NOT_STARTED" ? (
+                <button
+                  type="button"
+                  disabled={statusSubmitting || userCount === 0}
+                  onClick={() => void handleDraftStatusAction("start")}
+                  className="rounded-full bg-emerald-500 px-4 py-2 text-sm font-semibold text-slate-950 disabled:cursor-not-allowed disabled:bg-slate-700"
+                >
+                  Start Draft
+                </button>
+              ) : null}
+              {isAdmin && draftStatus === "IN_PROGRESS" ? (
+                <button
+                  type="button"
+                  disabled={statusSubmitting}
+                  onClick={() => void handleDraftStatusAction("pause")}
+                  className="rounded-full border border-amber-300/40 bg-amber-300/10 px-4 py-2 text-sm font-semibold text-amber-200 disabled:cursor-not-allowed disabled:opacity-60"
+                >
+                  Pause Draft
+                </button>
+              ) : null}
+              {isAdmin && draftStatus === "PAUSED" ? (
+                <button
+                  type="button"
+                  disabled={statusSubmitting}
+                  onClick={() => void handleDraftStatusAction("resume")}
+                  className="rounded-full bg-emerald-500 px-4 py-2 text-sm font-semibold text-slate-950 disabled:cursor-not-allowed disabled:bg-slate-700"
+                >
+                  Resume Draft
+                </button>
+              ) : null}
+            </div>
           </div>
           <div className="mt-6 space-y-3">
-            {sortedMembers.map((entry) => (
-              <div key={entry.user.id} className="flex flex-col gap-3 rounded-2xl border border-white/10 bg-white/5 p-4 sm:flex-row sm:items-center sm:justify-between">
-                <div>
-                  <p className="font-medium text-white">{entry.user.name ?? entry.user.email}</p>
-                  <p className="text-sm text-slate-400">{entry.user.username ?? entry.user.email}</p>
+            {sortedMembers.map((entry) => {
+              const memberName = entry.user.name ?? entry.user.email;
+              const position = draftOrder[entry.user.id] ?? entry.draftPosition ?? 1;
+              return (
+                <div
+                  key={entry.user.id}
+                  className="flex flex-col gap-3 rounded-2xl border border-white/10 bg-white/5 p-4 sm:flex-row sm:items-center sm:justify-between"
+                >
+                  <div>
+                    <p className="font-medium text-white">{memberName}</p>
+                    <p className="text-sm text-slate-400">{entry.user.username ?? entry.user.email}</p>
+                  </div>
+                  {isAdmin ? (
+                    <div className="flex items-center gap-2">
+                      <label className="text-sm text-slate-300">Pick</label>
+                      <input
+                        type="number"
+                        min="1"
+                        className="w-20 rounded-lg border border-white/10 bg-slate-950 px-3 py-2 text-white disabled:cursor-not-allowed disabled:opacity-60"
+                        disabled={draftStatus !== "NOT_STARTED"}
+                        value={position}
+                        onChange={(event) => {
+                          const nextValue = Number(event.target.value || 1);
+                          setDraftOrder((current) => ({ ...current, [entry.user.id]: nextValue }));
+                        }}
+                      />
+                      <button
+                        type="button"
+                        disabled={draftStatus !== "NOT_STARTED"}
+                        onClick={() => void handleDraftOrderUpdate(entry.user.id, position)}
+                        className="rounded-lg bg-emerald-500 px-3 py-2 text-sm font-semibold text-slate-950 disabled:cursor-not-allowed disabled:bg-slate-700"
+                      >
+                        Save
+                      </button>
+                    </div>
+                  ) : (
+                    <p className="text-sm font-medium text-slate-200">Pick {position}</p>
+                  )}
                 </div>
-                <div className="flex items-center gap-2">
-                  <label className="text-sm text-slate-300">Pick</label>
-                  <input
-                    type="number"
-                    min="1"
-                    className="w-20 rounded-lg border border-white/10 bg-slate-950 px-3 py-2 text-white"
-                    value={draftOrder[entry.user.id] ?? entry.draftPosition ?? 1}
-                    onChange={(event) => {
-                      const nextValue = Number(event.target.value || 1);
-                      setDraftOrder((current) => ({ ...current, [entry.user.id]: nextValue }));
-                    }}
-                  />
-                  <button type="button" onClick={() => void handleDraftOrderUpdate(entry.user.id, draftOrder[entry.user.id] ?? entry.draftPosition ?? 1)} className="rounded-lg bg-emerald-500 px-3 py-2 text-sm font-semibold text-slate-950">
-                    Save
-                  </button>
-                </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         </section>
 
         <section className="rounded-3xl border border-white/10 bg-slate-900/80 p-6 shadow-2xl shadow-black/30">
           <h3 className="text-xl font-semibold text-white">Submit a pick</h3>
-          <form onSubmit={handleSubmitPick} className="mt-5 space-y-4">
-            <label className="flex flex-col gap-2 text-sm text-slate-300">
-              <span>Manager</span>
-              <select value={selectedMemberId} onChange={(event) => setSelectedMemberId(event.target.value)} className="rounded-xl border border-white/10 bg-slate-950 px-3 py-2 text-white">
-                {sortedMembers.map((entry) => (
-                  <option key={entry.user.id} value={entry.user.id}>
-                    {entry.user.name ?? entry.user.email}
-                  </option>
-                ))}
-              </select>
-            </label>
-            <label className="flex flex-col gap-2 text-sm text-slate-300">
-              <span>Team</span>
-              <select value={selectedTeamId} onChange={(event) => setSelectedTeamId(event.target.value)} className="rounded-xl border border-white/10 bg-slate-950 px-3 py-2 text-white">
-                {availableTeams.map((team) => (
-                  <option key={team.id} value={team.id}>
-                    {team.name} {team.conference?.name ? `(${team.conference.name})` : ""}
-                  </option>
-                ))}
-              </select>
-            </label>
-            <button type="submit" disabled={submitting || !selectedTeamId} className="w-full rounded-xl bg-emerald-500 px-4 py-2 font-semibold text-slate-950 transition hover:bg-emerald-400 disabled:cursor-not-allowed disabled:bg-slate-700">
-              {submitting ? "Submitting..." : "Submit pick"}
-            </button>
-          </form>
+
+          {draftStatus === "NOT_STARTED" ? (
+            <p className="mt-5 rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-slate-300">
+              Draft has not started yet. An admin must click Start Draft.
+            </p>
+          ) : null}
+
+          {draftStatus === "PAUSED" ? (
+            <p className="mt-5 rounded-2xl border border-amber-300/30 bg-amber-300/10 px-4 py-3 text-sm text-amber-100">
+              Draft is currently paused.
+            </p>
+          ) : null}
+
+          {draftIsComplete ? (
+            <p className="mt-5 rounded-2xl border border-emerald-300/30 bg-emerald-300/10 px-4 py-3 text-sm text-emerald-100">
+              Draft complete.
+            </p>
+          ) : null}
+
+          {draftStatus === "IN_PROGRESS" && !draftIsComplete && !canShowSubmitForm ? (
+            <p className="mt-5 rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-slate-200">
+              {`${nextPicksUntilSelection ?? 0} picks until your next selection`}
+            </p>
+          ) : null}
+
+          {canShowSubmitForm ? (
+            <form onSubmit={handleSubmitPick} className="mt-5 space-y-4">
+              <p className="text-sm text-slate-300">
+                {isAdmin && activePickOwner
+                  ? `Submitting pick for ${activePickOwner.user.name ?? activePickOwner.user.email}.`
+                  : "You are on the clock."}
+              </p>
+              <label className="flex flex-col gap-2 text-sm text-slate-300">
+                <span>Team</span>
+                <select
+                  value={effectiveSelectedTeamId}
+                  onChange={(event) => setSelectedTeamId(event.target.value)}
+                  className="rounded-xl border border-white/10 bg-slate-950 px-3 py-2 text-white"
+                >
+                  {availableTeams.map((team) => (
+                    <option key={team.id} value={team.id}>
+                      {team.name} {team.conference?.name ? `(${team.conference.name})` : ""}
+                    </option>
+                  ))}
+                </select>
+              </label>
+              <button
+                type="submit"
+                disabled={submitting || !effectiveSelectedTeamId}
+                className="w-full rounded-xl bg-emerald-500 px-4 py-2 font-semibold text-slate-950 transition hover:bg-emerald-400 disabled:cursor-not-allowed disabled:bg-slate-700"
+              >
+                {submitting ? "Submitting..." : "Submit pick"}
+              </button>
+            </form>
+          ) : null}
 
           <div className="mt-6 rounded-2xl border border-white/10 bg-white/5 p-4">
             <h4 className="text-lg font-semibold text-white">Your draft checklist</h4>
             <ul className="mt-3 space-y-2 text-sm text-slate-300">
               {completedCriteria.map((criterion) => (
-                <li key={criterion.slot} className="flex items-center justify-between rounded-xl border border-white/10 bg-slate-950/50 px-3 py-2">
-                  <span className={criterion.satisfied ? "line-through text-slate-500" : "text-slate-200"}>{criterion.label}</span>
+                <li
+                  key={criterion.slot}
+                  className="flex items-center justify-between rounded-xl border border-white/10 bg-slate-950/50 px-3 py-2"
+                >
+                  <span className={criterion.satisfied ? "line-through text-slate-500" : "text-slate-200"}>
+                    {criterion.label}
+                  </span>
                   <span className="text-slate-400">{criterion.satisfied ? "Done" : "Pending"}</span>
                 </li>
               ))}
@@ -353,11 +608,21 @@ export default function DraftPage({ currentUser }: { currentUser: DraftPageUser 
                   const order = round % 2 === 1 ? sortedMembers : [...sortedMembers].reverse();
                   return (
                     <tr key={round}>
-                      <td className="rounded-l-xl border border-white/10 bg-slate-950/70 px-4 py-3 font-medium text-white">{round}</td>
-                      {order.map((entry) => {
-                        const pick = picks.find((candidate) => candidate.round === round && candidate.pickNumber === order.indexOf(entry) + 1);
+                      <td className="rounded-l-xl border border-white/10 bg-slate-950/70 px-4 py-3 font-medium text-white">
+                        {round}
+                      </td>
+                      {order.map((entry, orderIndex) => {
+                        const pick = pickByRoundAndNumber.get(`${round}-${orderIndex + 1}`);
+                        const isActiveCell =
+                          activePickOwner?.user.id === entry.user.id &&
+                          draftStatus === "IN_PROGRESS" &&
+                          !draftIsComplete &&
+                          Math.floor(pickCount / Math.max(userCount, 1)) + 1 === round;
                         return (
-                          <td key={`${round}-${entry.user.id}`} className="border border-white/10 bg-slate-950/70 px-4 py-3">
+                          <td
+                            key={`${round}-${entry.user.id}`}
+                            className={`border px-4 py-3 ${isActiveCell ? "border-emerald-400/40 bg-emerald-400/10" : "border-white/10 bg-slate-950/70"}`}
+                          >
                             {pick?.team ? `${pick.team.name}` : "—"}
                           </td>
                         );
