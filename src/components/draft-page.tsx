@@ -1,6 +1,6 @@
 'use client';
 
-import { type FormEvent, useEffect, useMemo, useState } from "react";
+import { type DragEvent, type FormEvent, useEffect, useMemo, useState } from "react";
 import { findLikelyManagerMatch } from "@/lib/manager-name-match";
 import {
   resolveSlotTypeForSelection,
@@ -119,6 +119,10 @@ export default function DraftPage({ currentUser }: { currentUser: DraftPageUser 
   const [picks, setPicks] = useState<DraftPick[]>([]);
   const [selectedTeamId, setSelectedTeamId] = useState("");
   const [draftOrder, setDraftOrder] = useState<Record<string, number>>({});
+  const [orderedMemberIds, setOrderedMemberIds] = useState<string[]>([]);
+  const [orderDirty, setOrderDirty] = useState(false);
+  const [dragUserId, setDragUserId] = useState<string | null>(null);
+  const [savingOrder, setSavingOrder] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
@@ -228,6 +232,16 @@ export default function DraftPage({ currentUser }: { currentUser: DraftPageUser 
       : null;
 
   useEffect(() => {
+    // Keep the drag-and-drop preview list in sync with the persisted draft
+    // order whenever it changes on the server, but don't clobber an
+    // in-progress unsaved drag edit.
+    if (orderDirty) {
+      return;
+    }
+    setOrderedMemberIds(sortedMembers.map((member) => member.user.id));
+  }, [orderDirty, sortedMembers]);
+
+  useEffect(() => {
     if (!deadlineAt) {
       return;
     }
@@ -327,24 +341,73 @@ export default function DraftPage({ currentUser }: { currentUser: DraftPageUser 
 
   const roundCount = Math.max(DRAFT_ROUNDS, Math.ceil((pickCount + 1) / Math.max(userCount, 1)));
 
-  async function handleDraftOrderUpdate(memberId: string, draftPosition: number) {
-    if (!league || !isAdmin) return;
+  const canEditDraftOrder = isAdmin && draftStatus === "NOT_STARTED";
 
-    const response = await fetch(`/api/leagues/${league.id}/members/${memberId}`, {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ draftPosition }),
-    });
+  function handleOrderDragStart(userId: string) {
+    return (event: DragEvent<HTMLDivElement>) => {
+      if (!canEditDraftOrder) return;
+      setDragUserId(userId);
+      event.dataTransfer.effectAllowed = "move";
+    };
+  }
 
-    const payload = await response.json().catch(() => ({}));
-    if (!response.ok) {
-      setMessage(payload.error ?? "Unable to update the draft order.");
-      return;
+  function handleOrderDragOver(overUserId: string) {
+    return (event: DragEvent<HTMLDivElement>) => {
+      if (!canEditDraftOrder || !dragUserId || dragUserId === overUserId) return;
+      event.preventDefault();
+
+      setOrderedMemberIds((current) => {
+        const fromIndex = current.indexOf(dragUserId);
+        const toIndex = current.indexOf(overUserId);
+        if (fromIndex === -1 || toIndex === -1 || fromIndex === toIndex) {
+          return current;
+        }
+
+        const next = [...current];
+        next.splice(fromIndex, 1);
+        next.splice(toIndex, 0, dragUserId);
+        return next;
+      });
+      setOrderDirty(true);
+    };
+  }
+
+  function handleOrderDragEnd() {
+    setDragUserId(null);
+  }
+
+  function handleResetDraftOrder() {
+    setOrderedMemberIds(sortedMembers.map((member) => member.user.id));
+    setOrderDirty(false);
+  }
+
+  async function handleSaveDraftOrder() {
+    if (!league || !isAdmin || orderedMemberIds.length === 0) return;
+
+    setSavingOrder(true);
+    setMessage(null);
+
+    try {
+      const order = orderedMemberIds.map((userId, index) => ({ userId, draftPosition: index + 1 }));
+      const response = await fetch("/api/admin/draft-order", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ leagueId: league.id, order }),
+      });
+
+      const payload = await response.json().catch(() => ({}));
+      if (!response.ok) {
+        throw new Error(payload.error ?? "Unable to update the draft order.");
+      }
+
+      setMessage("Draft order updated.");
+      setOrderDirty(false);
+      await loadDraftData({ soft: true });
+    } catch (error) {
+      setMessage(error instanceof Error ? error.message : "Unable to update the draft order.");
+    } finally {
+      setSavingOrder(false);
     }
-
-    setDraftOrder((current) => ({ ...current, [memberId]: draftPosition }));
-    setMessage("Draft order updated.");
-    await loadDraftData({ soft: true });
   }
 
   async function handleDraftStatusAction(action: "start" | "pause" | "resume") {
@@ -471,16 +534,41 @@ export default function DraftPage({ currentUser }: { currentUser: DraftPageUser 
           <div className="flex flex-wrap items-center justify-between gap-3">
             <div>
               <h3 className="text-xl font-semibold text-white">Draft order</h3>
-              <p className="mt-1 text-sm text-slate-400">Only admins can set the order before the draft starts.</p>
+              <p className="mt-1 text-sm text-slate-400">
+                {canEditDraftOrder
+                  ? "Drag and drop managers to set the draft order before the draft starts."
+                  : "Only admins can set the order before the draft starts."}
+              </p>
             </div>
             <div className="flex items-center gap-2">
-              <button
-                type="button"
-                onClick={() => void loadDraftData()}
-                className="rounded-full border border-white/10 px-3 py-2 text-sm text-slate-300 hover:bg-white/10"
-              >
-                Refresh
-              </button>
+              {canEditDraftOrder && orderDirty ? (
+                <>
+                  <button
+                    type="button"
+                    disabled={savingOrder}
+                    onClick={handleResetDraftOrder}
+                    className="rounded-full border border-white/10 px-3 py-2 text-sm text-slate-300 hover:bg-white/10 disabled:cursor-not-allowed disabled:opacity-60"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="button"
+                    disabled={savingOrder}
+                    onClick={() => void handleSaveDraftOrder()}
+                    className="rounded-full bg-emerald-500 px-4 py-2 text-sm font-semibold text-slate-950 disabled:cursor-not-allowed disabled:bg-slate-700"
+                  >
+                    {savingOrder ? "Saving..." : "Save Order"}
+                  </button>
+                </>
+              ) : (
+                <button
+                  type="button"
+                  onClick={() => void loadDraftData()}
+                  className="rounded-full border border-white/10 px-3 py-2 text-sm text-slate-300 hover:bg-white/10"
+                >
+                  Refresh
+                </button>
+              )}
               {isAdmin && draftStatus === "NOT_STARTED" ? (
                 <button
                   type="button"
@@ -514,43 +602,35 @@ export default function DraftPage({ currentUser }: { currentUser: DraftPageUser 
             </div>
           </div>
           <div className="mt-6 space-y-3">
-            {sortedMembers.map((entry) => {
+            {orderedMemberIds.map((userId, index) => {
+              const entry = sortedMembers.find((member) => member.user.id === userId);
+              if (!entry) return null;
+
               const memberName = getMemberDisplayName(entry.user);
-              const position = draftOrder[entry.user.id] ?? entry.draftPosition ?? 1;
+              const position = index + 1;
+              const isDragging = dragUserId === userId;
+
               return (
                 <div
-                  key={entry.user.id}
-                  className="flex flex-col gap-3 rounded-2xl border border-white/10 bg-white/5 p-4 sm:flex-row sm:items-center sm:justify-between"
+                  key={userId}
+                  draggable={canEditDraftOrder}
+                  onDragStart={handleOrderDragStart(userId)}
+                  onDragOver={handleOrderDragOver(userId)}
+                  onDrop={(event) => event.preventDefault()}
+                  onDragEnd={handleOrderDragEnd}
+                  className={`flex flex-col gap-3 rounded-2xl border border-white/10 bg-white/5 p-4 transition sm:flex-row sm:items-center sm:justify-between ${
+                    canEditDraftOrder ? "cursor-grab active:cursor-grabbing" : ""
+                  } ${isDragging ? "opacity-50" : ""}`}
                 >
-                  <div>
+                  <div className="flex items-center gap-3">
+                    {canEditDraftOrder ? (
+                      <span aria-hidden="true" className="select-none text-lg text-slate-500">
+                        ⠿
+                      </span>
+                    ) : null}
                     <p className="font-medium text-white">{memberName}</p>
                   </div>
-                  {isAdmin ? (
-                    <div className="flex items-center gap-2">
-                      <label className="text-sm text-slate-300">Pick</label>
-                      <input
-                        type="number"
-                        min="1"
-                        className="w-20 rounded-lg border border-white/10 bg-slate-950 px-3 py-2 text-white disabled:cursor-not-allowed disabled:opacity-60"
-                        disabled={draftStatus !== "NOT_STARTED"}
-                        value={position}
-                        onChange={(event) => {
-                          const nextValue = Number(event.target.value || 1);
-                          setDraftOrder((current) => ({ ...current, [entry.user.id]: nextValue }));
-                        }}
-                      />
-                      <button
-                        type="button"
-                        disabled={draftStatus !== "NOT_STARTED"}
-                        onClick={() => void handleDraftOrderUpdate(entry.user.id, position)}
-                        className="rounded-lg bg-emerald-500 px-3 py-2 text-sm font-semibold text-slate-950 disabled:cursor-not-allowed disabled:bg-slate-700"
-                      >
-                        Save
-                      </button>
-                    </div>
-                  ) : (
-                    <p className="text-sm font-medium text-slate-200">Pick {position}</p>
-                  )}
+                  <p className="text-sm font-medium text-slate-200">Pick {position}</p>
                 </div>
               );
             })}

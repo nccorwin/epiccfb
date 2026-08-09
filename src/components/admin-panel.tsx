@@ -115,9 +115,16 @@ function DraftOrderSection({ leagues }: { leagues: LeagueInfo[] }) {
     setSaving(true);
     setFeedback(null);
     try {
-      const order = league.leagueUsers.map((m) => ({
+      // Always persist freshly computed sequential positions (1..N) based on
+      // the current on-screen order, rather than trusting potentially stale
+      // or duplicate stored position values. This keeps the draft order
+      // self-healing even if prior data ever became corrupted.
+      const sorted = [...league.leagueUsers].sort(
+        (a, b) => (positions[a.userId] ?? 0) - (positions[b.userId] ?? 0),
+      );
+      const order = sorted.map((m, index) => ({
         userId: m.userId,
-        draftPosition: positions[m.userId] ?? 0,
+        draftPosition: index + 1,
       }));
       const res = await fetch("/api/admin/draft-order", {
         method: "POST",

@@ -24,6 +24,20 @@ export async function PATCH(
     return NextResponse.json({ error: "Member not found." }, { status: 404 });
   }
 
+  // Defense-in-depth: reject the update if it would create a duplicate
+  // draftPosition within the league (this endpoint is a single-row update
+  // and cannot atomically reshuffle other members' positions the way the
+  // batch /api/admin/draft-order endpoint does).
+  const conflicting = await prisma.leagueUser.findFirst({
+    where: { leagueId, draftPosition, NOT: { id: membership.id } },
+  });
+  if (conflicting) {
+    return NextResponse.json(
+      { error: "That draft position is already assigned to another manager." },
+      { status: 409 },
+    );
+  }
+
   const updated = await prisma.leagueUser.update({
     where: { id: membership.id },
     data: { draftPosition },
