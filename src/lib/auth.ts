@@ -67,7 +67,16 @@ export async function getCurrentUser(): Promise<AuthUser | null> {
   });
 
   if (!session?.user) {
-    cookieStore.delete(SESSION_COOKIE_NAME);
+    // Server Components (e.g. page/layout rendering) are not allowed to mutate
+    // cookies in Next.js - only Server Actions and Route Handlers can. Attempting
+    // to delete a stale/expired session cookie here would throw and crash the
+    // page render, so we only clear it when we're in a context that allows it.
+    try {
+      cookieStore.delete(SESSION_COOKIE_NAME);
+    } catch {
+      // Ignore: the stale cookie will be cleared next time this runs inside a
+      // Server Action or Route Handler (e.g. login/logout).
+    }
     return null;
   }
 
