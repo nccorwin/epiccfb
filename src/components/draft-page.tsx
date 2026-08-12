@@ -123,6 +123,7 @@ export default function DraftPage({ currentUser }: { currentUser: DraftPageUser 
   const [orderDirty, setOrderDirty] = useState(false);
   const [dragUserId, setDragUserId] = useState<string | null>(null);
   const [savingOrder, setSavingOrder] = useState(false);
+  const [undoingPick, setUndoingPick] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
@@ -437,6 +438,37 @@ export default function DraftPage({ currentUser }: { currentUser: DraftPageUser 
     }
   }
 
+  async function handleUndoPick() {
+    if (!league || !isAdmin) return;
+
+    if (!window.confirm("Undo the most recent draft pick? The team will return to the pool and that manager will be back on the clock.")) {
+      return;
+    }
+
+    setUndoingPick(true);
+    setMessage(null);
+
+    try {
+      const response = await fetch("/api/admin/draft-undo", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ leagueId: league.id }),
+      });
+
+      const payload = await response.json().catch(() => ({}));
+      if (!response.ok) {
+        throw new Error(payload.error ?? "Unable to undo the last pick.");
+      }
+
+      setMessage("Last pick undone.");
+      await loadDraftData({ soft: true });
+    } catch (error) {
+      setMessage(error instanceof Error ? error.message : "Unable to undo the last pick.");
+    } finally {
+      setUndoingPick(false);
+    }
+  }
+
   async function handleSubmitPick(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     if (!league || !effectiveSelectedTeamId || !activePickOwner) return;
@@ -587,6 +619,16 @@ export default function DraftPage({ currentUser }: { currentUser: DraftPageUser 
                   className="rounded-full border border-amber-300/40 bg-amber-300/10 px-4 py-2 text-sm font-semibold text-amber-200 disabled:cursor-not-allowed disabled:opacity-60"
                 >
                   Pause Draft
+                </button>
+              ) : null}
+              {isAdmin && (draftStatus === "IN_PROGRESS" || draftStatus === "PAUSED" || draftStatus === "COMPLETED") && pickCount > 0 ? (
+                <button
+                  type="button"
+                  disabled={undoingPick}
+                  onClick={() => void handleUndoPick()}
+                  className="rounded-full border border-rose-300/40 bg-rose-300/10 px-4 py-2 text-sm font-semibold text-rose-200 disabled:cursor-not-allowed disabled:opacity-60"
+                >
+                  {undoingPick ? "Undoing..." : "Undo Pick"}
                 </button>
               ) : null}
               {isAdmin && draftStatus === "PAUSED" ? (

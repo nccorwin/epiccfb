@@ -1,11 +1,13 @@
 import { NextResponse } from "next/server";
 import { UserRole, type Prisma } from "@prisma/client";
 import { getCurrentUser } from "@/lib/auth";
+import { sendOnTheClockEmail } from "@/lib/email";
 import { findLikelyManagerMatch } from "@/lib/manager-name-match";
 import { prisma } from "@/lib/prisma";
 import { getDraftPickNumber, resolveRosterSlotTypeForSelection, validateRosterSelection } from "@/lib/league-rules";
 
 const DRAFT_ROUNDS = 10;
+const PICK_WINDOW_MS = 48 * 60 * 60 * 1000;
 type DraftStatus = "NOT_STARTED" | "IN_PROGRESS" | "PAUSED" | "COMPLETED";
 
 function getDraftSettings(settings: Prisma.JsonValue | null): {
@@ -234,6 +236,31 @@ export async function POST(
 
     return { pick, roster, draftStatus: nextSettings.draftStatus, currentPickStartedAt: nextSettings.currentPickStartedAt };
   });
+
+  // Notify the next manager on the clock (best-effort; a failed email should
+  // not fail the pick submission itself).
+  if (transactionResult.draftStatus === "IN_PROGRESS") {
+    const nextPickIndex = pickCount + 1;
+    const nextPickerUserId = getPickerUserIdForPickIndex(nextPickIndex, orderedLeagueUsers);
+    const nextRound = Math.floor(nextPickIndex / Math.max(userCount, 1)) + 1;
+    const nextPicker = orderedLeagueUsers.find((entry) => entry.userId === nextPickerUserId);
+    const deadline = transactionResult.currentPickStartedAt
+      ? new Date(new Date(transactionResult.currentPickStartedAt).getTime() + PICK_WINDOW_MS)
+      : new Date(Date.now() + PICK_WINDOW_MS);
+
+    if (nextPicker?.user.email) {
+      try {
+        await sendOnTheClockEmail({
+          to: nextPicker.user.email,
+          firstName: nextPicker.user.firstName ?? nextPicker.user.name ?? "",
+          round: nextRound,
+          deadline,
+        });
+      } catch (error) {
+        console.error("[draft] Failed to send on-the-clock email", error);
+      }
+    }
+  }
 
   return NextResponse.json(transactionResult);
 }
