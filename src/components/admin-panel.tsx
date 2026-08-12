@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 type ConferenceInfo = { id: string; name: string; shortName: string };
 type TeamInfo = { id: string; name: string; shortName: string | null; conference: ConferenceInfo };
@@ -19,7 +19,7 @@ function displayName(u: UserInfo): string {
 }
 
 export default function AdminPanel({ leagues, teams }: AdminPanelProps) {
-  const [activeTab, setActiveTab] = useState<"draft-order" | "team-ownership">("draft-order");
+  const [activeTab, setActiveTab] = useState<"draft-order" | "draft-picks" | "team-ownership">("draft-order");
 
   return (
     <div className="space-y-8">
@@ -43,6 +43,16 @@ export default function AdminPanel({ leagues, teams }: AdminPanelProps) {
           Draft Order
         </button>
         <button
+          onClick={() => setActiveTab("draft-picks")}
+          className={`px-5 py-2 text-sm font-medium transition border-b-2 -mb-px ${
+            activeTab === "draft-picks"
+              ? "border-emerald-400 text-white"
+              : "border-transparent text-slate-400 hover:text-white"
+          }`}
+        >
+          Draft Picks
+        </button>
+        <button
           onClick={() => setActiveTab("team-ownership")}
           className={`px-5 py-2 text-sm font-medium transition border-b-2 -mb-px ${
             activeTab === "team-ownership"
@@ -55,6 +65,7 @@ export default function AdminPanel({ leagues, teams }: AdminPanelProps) {
       </div>
 
       {activeTab === "draft-order" && <DraftOrderSection leagues={leagues} />}
+      {activeTab === "draft-picks" && <DraftPicksSection leagues={leagues} teams={teams} />}
       {activeTab === "team-ownership" && <TeamOwnershipSection leagues={leagues} teams={teams} />}
     </div>
   );
@@ -263,6 +274,284 @@ function DraftOrderSection({ leagues }: { leagues: LeagueInfo[] }) {
         >
           {resetting ? "Resetting…" : "Reset Draft"}
         </button>
+      </div>
+    </div>
+  );
+}
+
+/* ─── DRAFT PICKS (MANUAL CORRECTION) SECTION ────────────────────────────── */
+
+type DraftPickInfo = {
+  id: string;
+  round: number;
+  pickNumber: number;
+  pickedAt: string | null;
+  user: UserInfo | null;
+  team: TeamInfo | null;
+};
+
+function DraftPicksSection({ leagues, teams }: { leagues: LeagueInfo[]; teams: TeamInfo[] }) {
+  const [selectedLeagueId, setSelectedLeagueId] = useState(leagues[0]?.id ?? "");
+  const [picks, setPicks] = useState<DraftPickInfo[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [feedback, setFeedback] = useState<{ type: "ok" | "err"; msg: string } | null>(null);
+  const [removingPickId, setRemovingPickId] = useState<string | null>(null);
+  const [insertUserId, setInsertUserId] = useState("");
+  const [insertTeamId, setInsertTeamId] = useState("");
+  const [insertRound, setInsertRound] = useState(1);
+  const [insertPickNumber, setInsertPickNumber] = useState(1);
+  const [inserting, setInserting] = useState(false);
+
+  const league = leagues.find((l) => l.id === selectedLeagueId);
+
+  async function loadPicks(leagueId: string) {
+    if (!leagueId) return;
+    setLoading(true);
+    try {
+      const res = await fetch(`/api/leagues/${leagueId}/picks`);
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error ?? "Unable to load picks.");
+      setPicks(data);
+    } catch (err: unknown) {
+      setFeedback({ type: "err", msg: err instanceof Error ? err.message : "Unable to load picks." });
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  useEffect(() => {
+    if (selectedLeagueId) void loadPicks(selectedLeagueId);
+  }, [selectedLeagueId]);
+
+  function handleLeagueChange(id: string) {
+    setSelectedLeagueId(id);
+    setFeedback(null);
+    void loadPicks(id);
+  }
+
+  async function handleRemovePick(pick: DraftPickInfo) {
+    if (!league) return;
+    const managerLabel = pick.user ? displayName(pick.user) : "that manager";
+    const pickedAtLabel = pick.pickedAt ? new Date(pick.pickedAt).toLocaleString() : "unknown time";
+    const confirmed = window.confirm(
+      `Remove ${managerLabel}'s Round ${pick.round} pick of ${pick.team?.name ?? "this team"} (made ${pickedAtLabel})? The team will return to the pool.`,
+    );
+    if (!confirmed) return;
+
+    setRemovingPickId(pick.id);
+    setFeedback(null);
+    try {
+      const res = await fetch("/api/admin/draft-correction", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          leagueId: selectedLeagueId,
+          remove: [{ pickId: pick.id }],
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error ?? "Unable to remove pick.");
+      setFeedback({ type: "ok", msg: "Pick removed." });
+      await loadPicks(selectedLeagueId);
+    } catch (err: unknown) {
+      setFeedback({ type: "err", msg: err instanceof Error ? err.message : "Unable to remove pick." });
+    } finally {
+      setRemovingPickId(null);
+    }
+  }
+
+  async function handleInsertPick() {
+    if (!league || !insertUserId || !insertTeamId) return;
+
+    setInserting(true);
+    setFeedback(null);
+    try {
+      const res = await fetch("/api/admin/draft-correction", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          leagueId: selectedLeagueId,
+          insert: [
+            {
+              round: insertRound,
+              pickNumber: insertPickNumber,
+              userId: insertUserId,
+              teamId: insertTeamId,
+            },
+          ],
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error ?? "Unable to add pick.");
+      if (Array.isArray(data.skipped) && data.skipped.length > 0) {
+        throw new Error(data.skipped[0]?.reason ?? "Unable to add pick.");
+      }
+      setFeedback({ type: "ok", msg: "Pick added." });
+      setInsertUserId("");
+      setInsertTeamId("");
+      await loadPicks(selectedLeagueId);
+    } catch (err: unknown) {
+      setFeedback({ type: "err", msg: err instanceof Error ? err.message : "Unable to add pick." });
+    } finally {
+      setInserting(false);
+    }
+  }
+
+  if (!league) return <p className="text-slate-400">No leagues found.</p>;
+
+  const pickedTeamIds = new Set(picks.map((p) => p.team?.id).filter(Boolean));
+  const availableTeams = teams.filter((t) => !pickedTeamIds.has(t.id));
+
+  return (
+    <div className="space-y-6">
+      <p className="text-sm text-slate-400">
+        Manually remove or add a specific draft pick. Use this to correct mistakes (e.g. a pick removed or attributed
+        to the wrong manager) without disrupting the rest of the draft board.
+      </p>
+
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-end">
+        <div>
+          <label className="mb-1 block text-xs font-semibold uppercase tracking-widest text-slate-400">League</label>
+          <select
+            value={selectedLeagueId}
+            onChange={(e) => handleLeagueChange(e.target.value)}
+            className="rounded-lg border border-white/10 bg-slate-800 px-3 py-2 text-sm text-white focus:outline-none focus:ring-2 focus:ring-emerald-500"
+          >
+            {leagues.map((l) => (
+              <option key={l.id} value={l.id}>
+                {l.name}
+              </option>
+            ))}
+          </select>
+        </div>
+      </div>
+
+      {feedback && (
+        <p className={`text-sm font-medium ${feedback.type === "ok" ? "text-emerald-400" : "text-red-400"}`}>
+          {feedback.msg}
+        </p>
+      )}
+
+      <div className="overflow-hidden rounded-xl border border-white/10 bg-slate-900/50">
+        <table className="w-full text-sm">
+          <thead>
+            <tr className="border-b border-white/10">
+              <th className="px-4 py-3 text-left font-semibold text-slate-400">Round</th>
+              <th className="px-4 py-3 text-left font-semibold text-slate-400">Pick #</th>
+              <th className="px-4 py-3 text-left font-semibold text-slate-400">Manager</th>
+              <th className="px-4 py-3 text-left font-semibold text-slate-400">Team</th>
+              <th className="px-4 py-3 text-left font-semibold text-slate-400">Picked At</th>
+              <th className="px-4 py-3 text-center font-semibold text-slate-400">Action</th>
+            </tr>
+          </thead>
+          <tbody>
+            {loading ? (
+              <tr>
+                <td colSpan={6} className="px-4 py-4 text-center text-slate-400">
+                  Loading…
+                </td>
+              </tr>
+            ) : picks.length === 0 ? (
+              <tr>
+                <td colSpan={6} className="px-4 py-4 text-center text-slate-400">
+                  No picks yet.
+                </td>
+              </tr>
+            ) : (
+              picks.map((pick) => (
+                <tr key={pick.id} className="border-b border-white/5 hover:bg-white/5">
+                  <td className="px-4 py-3">{pick.round}</td>
+                  <td className="px-4 py-3">{pick.pickNumber}</td>
+                  <td className="px-4 py-3 font-medium">{pick.user ? displayName(pick.user) : "—"}</td>
+                  <td className="px-4 py-3">{pick.team?.name ?? "—"}</td>
+                  <td className="px-4 py-3 text-slate-400">
+                    {pick.pickedAt ? new Date(pick.pickedAt).toLocaleString() : "—"}
+                  </td>
+                  <td className="px-4 py-3 text-center">
+                    <button
+                      onClick={() => void handleRemovePick(pick)}
+                      disabled={removingPickId === pick.id}
+                      className="rounded-full border border-red-400/40 bg-red-400/10 px-3 py-1 text-xs font-semibold text-red-300 hover:bg-red-400/20 disabled:opacity-50"
+                    >
+                      {removingPickId === pick.id ? "Removing…" : "Remove"}
+                    </button>
+                  </td>
+                </tr>
+              ))
+            )}
+          </tbody>
+        </table>
+      </div>
+
+      <div className="rounded-xl border border-white/10 bg-slate-900/50 p-4">
+        <h3 className="mb-3 text-sm font-semibold text-slate-200">Add a missing pick</h3>
+        <div className="flex flex-wrap items-end gap-3">
+          <div>
+            <label className="mb-1 block text-xs font-semibold uppercase tracking-widest text-slate-400">
+              Manager
+            </label>
+            <select
+              value={insertUserId}
+              onChange={(e) => setInsertUserId(e.target.value)}
+              className="rounded-lg border border-white/10 bg-slate-800 px-3 py-2 text-sm text-white focus:outline-none focus:ring-2 focus:ring-emerald-500"
+            >
+              <option value="">Select manager…</option>
+              {league.leagueUsers.map((m) => (
+                <option key={m.userId} value={m.userId}>
+                  {displayName(m.user)}
+                </option>
+              ))}
+            </select>
+          </div>
+          <div>
+            <label className="mb-1 block text-xs font-semibold uppercase tracking-widest text-slate-400">Team</label>
+            <select
+              value={insertTeamId}
+              onChange={(e) => setInsertTeamId(e.target.value)}
+              className="min-w-[12rem] rounded-lg border border-white/10 bg-slate-800 px-3 py-2 text-sm text-white focus:outline-none focus:ring-2 focus:ring-emerald-500"
+            >
+              <option value="">Select team…</option>
+              {availableTeams.map((t) => (
+                <option key={t.id} value={t.id}>
+                  {t.name}
+                </option>
+              ))}
+            </select>
+          </div>
+          <div>
+            <label className="mb-1 block text-xs font-semibold uppercase tracking-widest text-slate-400">Round</label>
+            <input
+              type="number"
+              min="1"
+              value={insertRound}
+              onChange={(e) => setInsertRound(Number(e.target.value) || 1)}
+              className="w-20 rounded-lg border border-white/10 bg-slate-800 px-3 py-2 text-sm text-white focus:outline-none focus:ring-2 focus:ring-emerald-500"
+            />
+          </div>
+          <div>
+            <label className="mb-1 block text-xs font-semibold uppercase tracking-widest text-slate-400">
+              Pick #
+            </label>
+            <input
+              type="number"
+              min="1"
+              value={insertPickNumber}
+              onChange={(e) => setInsertPickNumber(Number(e.target.value) || 1)}
+              className="w-20 rounded-lg border border-white/10 bg-slate-800 px-3 py-2 text-sm text-white focus:outline-none focus:ring-2 focus:ring-emerald-500"
+            />
+          </div>
+          <button
+            onClick={() => void handleInsertPick()}
+            disabled={inserting || !insertUserId || !insertTeamId}
+            className="rounded-full bg-emerald-500 px-6 py-2 text-sm font-semibold text-slate-950 transition hover:bg-emerald-400 disabled:opacity-50"
+          >
+            {inserting ? "Adding…" : "Add Pick"}
+          </button>
+        </div>
+        <p className="mt-2 text-xs text-slate-500">
+          Pick # refers to the draft position of the manager selected above (matches the &quot;Pick&quot; number shown
+          in Draft Order).
+        </p>
       </div>
     </div>
   );

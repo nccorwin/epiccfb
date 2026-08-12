@@ -46,7 +46,12 @@ export async function POST(request: Request) {
 
   const latestPick = await prisma.draftPick.findFirst({
     where: { leagueId },
-    orderBy: [{ round: "desc" }, { pickNumber: "desc" }],
+    // Order by the actual timestamp the pick was made, not by round/pickNumber.
+    // pickNumber represents the draft *position* of the picker for that slot
+    // (which reverses every other round for the snake draft), so sorting by
+    // round/pickNumber descending does not reliably identify the most recent
+    // real-world pick and can target the wrong pick for deletion.
+    orderBy: [{ pickedAt: "desc" }, { round: "desc" }],
   });
 
   if (!latestPick) {

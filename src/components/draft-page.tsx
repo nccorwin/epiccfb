@@ -438,10 +438,23 @@ export default function DraftPage({ currentUser }: { currentUser: DraftPageUser 
     }
   }
 
+  const mostRecentPick = useMemo(() => {
+    if (picks.length === 0) return null;
+    return [...picks].sort((left, right) => {
+      const leftDate = left.pickedAt ? new Date(left.pickedAt).getTime() : 0;
+      const rightDate = right.pickedAt ? new Date(right.pickedAt).getTime() : 0;
+      return rightDate - leftDate;
+    })[0];
+  }, [picks]);
+
   async function handleUndoPick() {
     if (!league || !isAdmin) return;
 
-    if (!window.confirm("Undo the most recent draft pick? The team will return to the pool and that manager will be back on the clock.")) {
+    const confirmationDetail = mostRecentPick
+      ? `This will undo ${mostRecentPick.user?.name ?? mostRecentPick.user?.email ?? "the manager"}'s Round ${mostRecentPick.round} pick of ${mostRecentPick.team?.name ?? "their selected team"}. The team will return to the pool and that manager will be back on the clock.`
+      : "Undo the most recent draft pick? The team will return to the pool and that manager will be back on the clock.";
+
+    if (!window.confirm(confirmationDetail)) {
       return;
     }
 
