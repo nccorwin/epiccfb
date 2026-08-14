@@ -738,6 +738,112 @@ function TeamOwnershipSection({ leagues, teams }: { leagues: LeagueInfo[]; teams
       >
         {saving ? "Transferring…" : "Execute Transfer"}
       </button>
+
+      <div className="border-t border-white/10 pt-6">
+        <AddTeamSection teams={teams} />
+      </div>
+    </div>
+  );
+}
+
+/* ─── ADD TEAM SECTION ────────────────────────────────────────────────────── */
+
+function AddTeamSection({ teams }: { teams: TeamInfo[] }) {
+  const conferences = Array.from(
+    new Map(teams.map((t) => [t.conference.id, t.conference])).values(),
+  ).sort((a, b) => a.name.localeCompare(b.name));
+
+  const [name, setName] = useState("");
+  const [conferenceId, setConferenceId] = useState("");
+  const [isFcs, setIsFcs] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [feedback, setFeedback] = useState<{ type: "ok" | "err"; msg: string } | null>(null);
+
+  async function handleAddTeam() {
+    if (!name.trim() || !conferenceId) return;
+    setSaving(true);
+    setFeedback(null);
+    try {
+      const res = await fetch("/api/admin/add-team", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name: name.trim(), conferenceId, isFcs }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error ?? "Unknown error");
+      setFeedback({ type: "ok", msg: `${data.team.name} was added successfully. Reloading…` });
+      setName("");
+      setConferenceId("");
+      setIsFcs(false);
+      setTimeout(() => window.location.reload(), 800);
+    } catch (err: unknown) {
+      setFeedback({ type: "err", msg: err instanceof Error ? err.message : "Failed to add team." });
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  return (
+    <div className="space-y-4">
+      <h3 className="text-sm font-semibold uppercase tracking-wider text-sky-400">
+        Add a Missing Team
+      </h3>
+      <p className="text-sm text-slate-400">
+        Use this if a school is missing from the draft/roster team dropdowns (e.g. a naming gap
+        during initial setup).
+      </p>
+
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-end">
+        <div className="flex-1">
+          <label className="mb-1 block text-xs font-semibold uppercase tracking-widest text-slate-400">
+            Team name
+          </label>
+          <input
+            type="text"
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            placeholder="e.g. Ole Miss"
+            className="w-full rounded-lg border border-white/10 bg-slate-800 px-3 py-2 text-sm text-white focus:outline-none focus:ring-2 focus:ring-emerald-500"
+          />
+        </div>
+
+        <div className="flex-1">
+          <label className="mb-1 block text-xs font-semibold uppercase tracking-widest text-slate-400">
+            Conference
+          </label>
+          <select
+            value={conferenceId}
+            onChange={(e) => setConferenceId(e.target.value)}
+            className="w-full rounded-lg border border-white/10 bg-slate-800 px-3 py-2 text-sm text-white focus:outline-none focus:ring-2 focus:ring-emerald-500"
+          >
+            <option value="">— Select conference —</option>
+            {conferences.map((c) => (
+              <option key={c.id} value={c.id}>
+                {c.name}
+              </option>
+            ))}
+          </select>
+        </div>
+
+        <label className="flex items-center gap-2 text-sm text-slate-300">
+          <input type="checkbox" checked={isFcs} onChange={(e) => setIsFcs(e.target.checked)} />
+          FCS
+        </label>
+
+        <button
+          onClick={handleAddTeam}
+          disabled={saving || !name.trim() || !conferenceId}
+          className="rounded-full bg-sky-500 px-6 py-2 text-sm font-semibold text-slate-950 transition hover:bg-sky-400 disabled:opacity-40"
+        >
+          {saving ? "Adding…" : "Add Team"}
+        </button>
+      </div>
+
+      {feedback && (
+        <p className={`text-sm font-medium ${feedback.type === "ok" ? "text-emerald-400" : "text-red-400"}`}>
+          {feedback.msg}
+        </p>
+      )}
     </div>
   );
 }
