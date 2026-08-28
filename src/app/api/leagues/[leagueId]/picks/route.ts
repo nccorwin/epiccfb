@@ -4,7 +4,12 @@ import { getCurrentUser } from "@/lib/auth";
 import { sendOnTheClockEmail } from "@/lib/email";
 import { findLikelyManagerMatch } from "@/lib/manager-name-match";
 import { prisma } from "@/lib/prisma";
-import { getDraftPickNumber, resolveRosterSlotTypeForSelection, validateRosterSelection } from "@/lib/league-rules";
+import {
+  REQUIRED_ROSTER_SLOTS,
+  getDraftPickNumber,
+  resolveRosterSlotTypeForSelection,
+  validateRosterSelection,
+} from "@/lib/league-rules";
 
 const DRAFT_ROUNDS = 10;
 const PICK_WINDOW_MS = 48 * 60 * 60 * 1000;
@@ -50,6 +55,11 @@ export async function GET(
   _request: Request,
   { params }: { params: Promise<{ leagueId: string }> },
 ) {
+  const currentUser = await getCurrentUser();
+  if (!currentUser) {
+    return NextResponse.json({ error: "Unauthorized." }, { status: 401 });
+  }
+
   const { leagueId } = await params;
   const picks = await prisma.draftPick.findMany({
     where: { leagueId },
@@ -59,7 +69,17 @@ export async function GET(
           conference: true,
         },
       },
-      user: true,
+      user: {
+        select: {
+          id: true,
+          email: true,
+          username: true,
+          firstName: true,
+          lastName: true,
+          name: true,
+          role: true,
+        },
+      },
     },
     orderBy: [{ round: "asc" }, { pickNumber: "asc" }],
   });
@@ -90,7 +110,17 @@ export async function POST(
     include: {
       leagueUsers: {
         include: {
-          user: true,
+          user: {
+            select: {
+              id: true,
+              email: true,
+              username: true,
+              firstName: true,
+              lastName: true,
+              name: true,
+              role: true,
+            },
+          },
         },
         orderBy: [{ draftPosition: "asc" }, { createdAt: "asc" }],
       },
@@ -182,15 +212,46 @@ export async function POST(
     },
   });
 
-  const slotType = resolveRosterSlotTypeForSelection(team, existingSelections.map((entry) => ({
+  const mappedSelections = existingSelections.map((entry) => ({
     slotType: entry.slotType,
     team: entry.team,
-  })));
-  if (!slotType || !validateRosterSelection(team, existingSelections.map((entry) => ({
-    slotType: entry.slotType,
-    team: entry.team,
-  })))) {
-    return NextResponse.json({ error: "This team does not fit the roster requirements for that user." }, { status: 409 });
+  }));
+  const slotType = resolveRosterSlotTypeForSelection(team, mappedSelections);
+  const selectionIsValid = slotType ? validateRosterSelection(team, mappedSelections) : false;
+  if (!slotType || !selectionIsValid) {
+    const slotUsage = REQUIRED_ROSTER_SLOTS.reduce<Record<string, { used: number; limit: number }>>((acc, slot) => {
+      acc[slot.slotType] = {
+        used: mappedSelections.filter((selection) => selection.slotType === slot.slotType).length,
+        limit: slot.count,
+      };
+      return acc;
+    }, {});
+
+    if (!slotType) {
+      return NextResponse.json(
+        { error: "This team does not fit the roster requirements for that user." },
+        { status: 409 },
+      );
+    }
+
+    const selectedSlotUsage = slotUsage[slotType] ?? { used: 0, limit: 0 };
+    const wildcardUsage = slotUsage.WILDCARD ?? { used: 0, limit: 0 };
+
+    if (slotType === "WILDCARD" && wildcardUsage.used >= wildcardUsage.limit) {
+      return NextResponse.json(
+        { error: "Wildcard slots are already filled for this manager." },
+        { status: 409 },
+      );
+    }
+
+    const slotLabel = slotType.replace(/_/g, " ");
+    const baseSlotFull = selectedSlotUsage.used >= selectedSlotUsage.limit;
+    const wildcardFull = wildcardUsage.used >= wildcardUsage.limit;
+    const reason = baseSlotFull && wildcardFull
+      ? `${slotLabel} requirements are already filled and wildcard slots are full.`
+      : "This team does not fit the roster requirements for that user.";
+
+    return NextResponse.json({ error: reason }, { status: 409 });
   }
 
   const round = Math.floor(pickCount / Math.max(userCount, 1)) + 1;

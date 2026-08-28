@@ -1,14 +1,31 @@
 import { NextResponse } from "next/server";
+import { UserRole } from "@prisma/client";
+import { getCurrentUser } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 
 export async function GET() {
+  const currentUser = await getCurrentUser();
+  if (!currentUser) {
+    return NextResponse.json({ error: "Unauthorized." }, { status: 401 });
+  }
+
   const leagues = await prisma.league.findMany({
     orderBy: { createdAt: "desc" },
     include: {
       season: true,
       leagueUsers: {
         include: {
-          user: true,
+          user: {
+            select: {
+              id: true,
+              email: true,
+              username: true,
+              firstName: true,
+              lastName: true,
+              name: true,
+              role: true,
+            },
+          },
         },
       },
     },
@@ -18,6 +35,11 @@ export async function GET() {
 }
 
 export async function POST(request: Request) {
+  const currentUser = await getCurrentUser();
+  if (!currentUser || currentUser.role !== UserRole.ADMIN) {
+    return NextResponse.json({ error: "Forbidden." }, { status: 403 });
+  }
+
   const body = await request.json();
   const name = String(body?.name ?? "").trim();
   const seasonYear = Number(body?.seasonYear ?? new Date().getFullYear());

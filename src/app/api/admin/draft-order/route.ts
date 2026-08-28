@@ -40,7 +40,19 @@ export async function POST(request: Request) {
 
   const updated = await prisma.leagueUser.findMany({
     where: { leagueId },
-    include: { user: true },
+    include: {
+      user: {
+        select: {
+          id: true,
+          email: true,
+          username: true,
+          firstName: true,
+          lastName: true,
+          name: true,
+          role: true,
+        },
+      },
+    },
     orderBy: { draftPosition: "asc" },
   });
 

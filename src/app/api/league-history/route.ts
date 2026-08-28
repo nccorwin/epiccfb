@@ -1,8 +1,14 @@
 import { NextResponse } from "next/server";
+import { getCurrentUser } from "@/lib/auth";
 import { isLikelySameManager } from "@/lib/manager-name-match";
 import { prisma } from "@/lib/prisma";
 
 export async function GET(request: Request) {
+  const currentUser = await getCurrentUser();
+  if (!currentUser) {
+    return NextResponse.json({ error: "Unauthorized." }, { status: 401 });
+  }
+
   const { searchParams } = new URL(request.url);
   const season = Number(searchParams.get("season") ?? "2025");
 

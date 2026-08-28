@@ -141,7 +141,20 @@ export async function POST(request: Request) {
 
   const updatedPicks = await prisma.draftPick.findMany({
     where: { leagueId },
-    include: { team: { include: { conference: true } }, user: true },
+    include: {
+      team: { include: { conference: true } },
+      user: {
+        select: {
+          id: true,
+          email: true,
+          username: true,
+          firstName: true,
+          lastName: true,
+          name: true,
+          role: true,
+        },
+      },
+    },
     orderBy: [{ round: "asc" }, { pickNumber: "asc" }],
   });
 

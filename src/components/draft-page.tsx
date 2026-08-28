@@ -3,6 +3,8 @@
 import { type DragEvent, type FormEvent, useEffect, useMemo, useState } from "react";
 import { findLikelyManagerMatch } from "@/lib/manager-name-match";
 import {
+  getBaseSlotTypeForTeam,
+  getMaxSlotCount,
   resolveSlotTypeForSelection,
   type DraftSlotType,
 } from "@/lib/draft-slot-logic";
@@ -58,6 +60,7 @@ type DraftPick = {
 };
 
 type DraftStatus = "NOT_STARTED" | "IN_PROGRESS" | "PAUSED" | "COMPLETED";
+type DraftMessage = { tone: "success" | "error"; text: string } | null;
 
 const DRAFT_ROUNDS = 10;
 const PICK_WINDOW_MS = 48 * 60 * 60 * 1000;
@@ -83,6 +86,25 @@ function formatTimeLeft(ms: number) {
 
 function resolveTeamSlot(team: Team, existingSelections: Array<{ slotType: DraftSlot; team: Team }>): DraftSlot {
   return resolveSlotTypeForSelection(team, existingSelections);
+}
+
+function toSlotLabel(slotType: DraftSlot) {
+  switch (slotType) {
+    case "BIG_TEN":
+      return "Big Ten";
+    case "BIG_TWELVE":
+      return "Big 12";
+    case "SEC":
+      return "SEC";
+    case "ACC":
+      return "ACC";
+    case "GROUP_OF_FIVE":
+      return "Group of 5";
+    case "FCS":
+      return "FCS";
+    case "WILDCARD":
+      return "Wildcard";
+  }
 }
 
 function getDraftStatus(league: League | null): DraftStatus {
@@ -124,7 +146,7 @@ export default function DraftPage({ currentUser }: { currentUser: DraftPageUser 
   const [dragUserId, setDragUserId] = useState<string | null>(null);
   const [savingOrder, setSavingOrder] = useState(false);
   const [undoingPick, setUndoingPick] = useState(false);
-  const [message, setMessage] = useState<string | null>(null);
+  const [message, setMessage] = useState<DraftMessage>(null);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [statusSubmitting, setStatusSubmitting] = useState(false);
@@ -173,7 +195,10 @@ export default function DraftPage({ currentUser }: { currentUser: DraftPageUser 
       const picksPayload = await picksResponse.json();
       setPicks(Array.isArray(picksPayload) ? picksPayload : []);
     } catch (error) {
-      setMessage(error instanceof Error ? error.message : "Unable to load draft data.");
+      setMessage({
+        tone: "error",
+        text: error instanceof Error ? error.message : "Unable to load draft data.",
+      });
     } finally {
       if (!options?.soft) {
         setLoading(false);
@@ -272,10 +297,6 @@ export default function DraftPage({ currentUser }: { currentUser: DraftPageUser 
       .filter((team) => !pickedTeamIds.has(team.id))
       .sort((left, right) => left.name.localeCompare(right.name));
   }, [picks, teams]);
-  const effectiveSelectedTeamId =
-    selectedTeamId && availableTeams.some((team) => team.id === selectedTeamId)
-      ? selectedTeamId
-      : (availableTeams[0]?.id ?? "");
 
   const userPicks = useMemo(
     () => picks.filter((pick) => pick.user?.id && currentManagerUserIds.includes(pick.user.id)),
@@ -313,6 +334,85 @@ export default function DraftPage({ currentUser }: { currentUser: DraftPageUser 
       return { ...requirement, selected };
     });
   }, [userPicks]);
+
+  const activePickSelections = useMemo(() => {
+    if (!activePickOwner) {
+      return [] as Array<{ slotType: DraftSlot; team: Team }>;
+    }
+
+    const ownerPicks = picks
+      .filter((pick) => pick.user?.id === activePickOwner.user.id && pick.team)
+      .sort((left, right) => {
+        const leftDate = left.pickedAt ? new Date(left.pickedAt).getTime() : 0;
+        const rightDate = right.pickedAt ? new Date(right.pickedAt).getTime() : 0;
+        if (leftDate !== rightDate) {
+          return leftDate - rightDate;
+        }
+        if (left.round !== right.round) {
+          return left.round - right.round;
+        }
+        return left.pickNumber - right.pickNumber;
+      });
+
+    const assignedSelections: Array<{ slotType: DraftSlot; team: Team }> = [];
+    for (const pick of ownerPicks) {
+      if (!pick.team) {
+        continue;
+      }
+
+      assignedSelections.push({
+        slotType: resolveTeamSlot(pick.team, assignedSelections),
+        team: pick.team,
+      });
+    }
+
+    return assignedSelections;
+  }, [activePickOwner, picks]);
+
+  const availableTeamOptions = useMemo(() => {
+    return availableTeams.map((team) => {
+      const resolvedSlot = resolveTeamSlot(team, activePickSelections);
+      const resolvedSlotLimit = getMaxSlotCount(resolvedSlot);
+      const resolvedSlotCount = activePickSelections.filter((entry) => entry.slotType === resolvedSlot).length;
+      const canSelect = resolvedSlotCount < resolvedSlotLimit;
+
+      const baseSlot = getBaseSlotTypeForTeam(team);
+      const baseSlotLimit = getMaxSlotCount(baseSlot);
+      const baseSlotCount = activePickSelections.filter((entry) => entry.slotType === baseSlot).length;
+      const wildcardLimit = getMaxSlotCount("WILDCARD");
+      const wildcardCount = activePickSelections.filter((entry) => entry.slotType === "WILDCARD").length;
+      const overflowsToWildcard = resolvedSlot === "WILDCARD" && baseSlot !== "WILDCARD";
+
+      let reason: string | null = null;
+      if (!canSelect && resolvedSlot === "WILDCARD") {
+        reason = overflowsToWildcard && baseSlotCount >= baseSlotLimit
+          ? `${toSlotLabel(baseSlot)} slots are full and wildcard slots are full.`
+          : "Wildcard slots are already full.";
+      } else if (!canSelect) {
+        reason = `${toSlotLabel(resolvedSlot)} slots are already full.`;
+      } else if (overflowsToWildcard && wildcardCount < wildcardLimit) {
+        reason = `${toSlotLabel(baseSlot)} is full, so this pick uses a wildcard slot.`;
+      } else {
+        reason = `Fills ${toSlotLabel(resolvedSlot)}.`;
+      }
+
+      return {
+        team,
+        canSelect,
+        reason,
+      };
+    });
+  }, [activePickSelections, availableTeams]);
+
+  const selectableTeamOptions = useMemo(
+    () => availableTeamOptions.filter((option) => option.canSelect),
+    [availableTeamOptions],
+  );
+
+  const effectiveSelectedTeamId =
+    selectedTeamId && selectableTeamOptions.some((option) => option.team.id === selectedTeamId)
+      ? selectedTeamId
+      : (selectableTeamOptions[0]?.team.id ?? "");
 
   const nextPicksUntilSelection = useMemo(() => {
     if (draftStatus !== "IN_PROGRESS" || draftIsComplete || userCount === 0) {
@@ -401,11 +501,14 @@ export default function DraftPage({ currentUser }: { currentUser: DraftPageUser 
         throw new Error(payload.error ?? "Unable to update the draft order.");
       }
 
-      setMessage("Draft order updated.");
+      setMessage({ tone: "success", text: "Draft order updated." });
       setOrderDirty(false);
       await loadDraftData({ soft: true });
     } catch (error) {
-      setMessage(error instanceof Error ? error.message : "Unable to update the draft order.");
+      setMessage({
+        tone: "error",
+        text: error instanceof Error ? error.message : "Unable to update the draft order.",
+      });
     } finally {
       setSavingOrder(false);
     }
@@ -429,10 +532,16 @@ export default function DraftPage({ currentUser }: { currentUser: DraftPageUser 
         throw new Error(payload.error ?? "Unable to update draft status.");
       }
 
-      setMessage(action === "start" ? "Draft started." : action === "pause" ? "Draft paused." : "Draft resumed.");
+      setMessage({
+        tone: "success",
+        text: action === "start" ? "Draft started." : action === "pause" ? "Draft paused." : "Draft resumed.",
+      });
       await loadDraftData({ soft: true });
     } catch (error) {
-      setMessage(error instanceof Error ? error.message : "Unable to update draft status.");
+      setMessage({
+        tone: "error",
+        text: error instanceof Error ? error.message : "Unable to update draft status.",
+      });
     } finally {
       setStatusSubmitting(false);
     }
@@ -473,10 +582,13 @@ export default function DraftPage({ currentUser }: { currentUser: DraftPageUser 
         throw new Error(payload.error ?? "Unable to undo the last pick.");
       }
 
-      setMessage("Last pick undone.");
+      setMessage({ tone: "success", text: "Last pick undone." });
       await loadDraftData({ soft: true });
     } catch (error) {
-      setMessage(error instanceof Error ? error.message : "Unable to undo the last pick.");
+      setMessage({
+        tone: "error",
+        text: error instanceof Error ? error.message : "Unable to undo the last pick.",
+      });
     } finally {
       setUndoingPick(false);
     }
@@ -484,7 +596,18 @@ export default function DraftPage({ currentUser }: { currentUser: DraftPageUser 
 
   async function handleSubmitPick(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    if (!league || !effectiveSelectedTeamId || !activePickOwner) return;
+    if (!league) {
+      setMessage({ tone: "error", text: "League data is not loaded yet. Please refresh and try again." });
+      return;
+    }
+    if (!activePickOwner) {
+      setMessage({ tone: "error", text: "Unable to determine who is on the clock. Please refresh and try again." });
+      return;
+    }
+    if (!effectiveSelectedTeamId) {
+      setMessage({ tone: "error", text: "No eligible teams are available for this manager." });
+      return;
+    }
 
     setSubmitting(true);
     setMessage(null);
@@ -501,10 +624,13 @@ export default function DraftPage({ currentUser }: { currentUser: DraftPageUser 
         throw new Error(payload.error ?? "Unable to submit pick.");
       }
 
-      setMessage("Draft pick submitted.");
+      setMessage({ tone: "success", text: "Draft pick submitted." });
       await loadDraftData({ soft: true });
     } catch (error) {
-      setMessage(error instanceof Error ? error.message : "Unable to submit pick.");
+      setMessage({
+        tone: "error",
+        text: error instanceof Error ? error.message : "Unable to submit pick.",
+      });
     } finally {
       setSubmitting(false);
     }
@@ -555,7 +681,13 @@ export default function DraftPage({ currentUser }: { currentUser: DraftPageUser 
       </section>
 
       {message ? (
-        <div className="rounded-2xl border border-emerald-400/20 bg-emerald-400/10 px-4 py-3 text-sm text-emerald-200">{message}</div>
+        <div className={`rounded-2xl border px-4 py-3 text-sm ${
+          message.tone === "success"
+            ? "border-emerald-400/20 bg-emerald-400/10 text-emerald-200"
+            : "border-rose-400/20 bg-rose-400/10 text-rose-200"
+        }`}>
+          {message.text}
+        </div>
       ) : null}
 
       {isAdmin ? (
@@ -733,13 +865,22 @@ export default function DraftPage({ currentUser }: { currentUser: DraftPageUser 
                   onChange={(event) => setSelectedTeamId(event.target.value)}
                   className="rounded-xl border border-white/10 bg-slate-950 px-3 py-2 text-white"
                 >
-                  {availableTeams.map((team) => (
-                    <option key={team.id} value={team.id}>
-                      {team.name} {team.conference?.name ? `(${team.conference.name})` : ""}
+                  {availableTeamOptions.map((option) => (
+                    <option key={option.team.id} value={option.team.id} disabled={!option.canSelect}>
+                      {option.team.name} {option.team.conference?.name ? `(${option.team.conference.name})` : ""}{" "}
+                      {option.reason ? `— ${option.reason}` : ""}
                     </option>
                   ))}
                 </select>
+                <span className="text-xs text-slate-400">
+                  Teams that violate filled slot limits are disabled with an explanation.
+                </span>
               </label>
+              {selectableTeamOptions.length === 0 ? (
+                <p className="rounded-xl border border-rose-300/30 bg-rose-300/10 px-3 py-2 text-sm text-rose-100">
+                  No eligible teams remain for this manager based on current roster requirements.
+                </p>
+              ) : null}
               <button
                 type="submit"
                 disabled={submitting || !effectiveSelectedTeamId}

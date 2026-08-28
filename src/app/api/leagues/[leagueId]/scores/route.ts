@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { getCurrentUser } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { calculateTeamGamePoints } from "@/lib/scoring";
 
@@ -6,6 +7,11 @@ export async function GET(
   request: Request,
   { params }: { params: Promise<{ leagueId: string }> },
 ) {
+  const currentUser = await getCurrentUser();
+  if (!currentUser) {
+    return NextResponse.json({ error: "Unauthorized." }, { status: 401 });
+  }
+
   const { leagueId } = await params;
   const { searchParams } = new URL(request.url);
   const weekNumber = Number(searchParams.get("weekNumber") ?? 1);

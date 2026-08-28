@@ -17,6 +17,16 @@ export type ExistingSlotSelection<TTeam extends SlotTeamLike = SlotTeamLike> = {
   team?: TTeam | null;
 };
 
+const SLOT_LIMITS: Record<DraftSlotType, number> = {
+  BIG_TEN: 1,
+  BIG_TWELVE: 1,
+  SEC: 1,
+  ACC: 1,
+  GROUP_OF_FIVE: 2,
+  FCS: 2,
+  WILDCARD: 2,
+};
+
 export function normalizeConferenceName(conferenceName?: string | null) {
   return conferenceName?.trim().toLowerCase() ?? "";
 }
@@ -59,25 +69,20 @@ export function resolveSlotTypeForSelection<TTeam extends SlotTeamLike>(
 ): DraftSlotType {
   const baseSlotType = getBaseSlotTypeForTeam(team);
   const conferenceName = normalizeConferenceName(team.conference?.name);
-  const existingConferenceNames = existingSelections
-    .map((selection) => normalizeConferenceName(selection.team?.conference?.name))
-    .filter(Boolean);
-
-  if (baseSlotType === "FCS") {
-    const existingFcsSlots = existingSelections.filter((selection) => selection.slotType === "FCS").length;
-    if (existingFcsSlots >= 2) {
-      return "WILDCARD";
-    }
-    return "FCS";
-  }
 
   if (baseSlotType === "WILDCARD" || isIndependentConference(conferenceName)) {
     return "WILDCARD";
   }
 
-  if (existingConferenceNames.includes(conferenceName)) {
+  const existingBaseSlotCount = existingSelections.filter((selection) => selection.slotType === baseSlotType).length;
+  const baseSlotLimit = SLOT_LIMITS[baseSlotType];
+  if (existingBaseSlotCount >= baseSlotLimit) {
     return "WILDCARD";
   }
 
   return baseSlotType;
+}
+
+export function getMaxSlotCount(slotType: DraftSlotType) {
+  return SLOT_LIMITS[slotType];
 }
