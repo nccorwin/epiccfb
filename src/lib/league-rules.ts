@@ -23,6 +23,13 @@ export type ExistingRosterSelection = {
   team?: TeamLike | null;
 };
 
+export type PickSelectionLike<TTeam extends TeamLike = TeamLike> = {
+  team?: TTeam | null;
+  pickedAt?: Date | string | null;
+  round?: number | null;
+  pickNumber?: number | null;
+};
+
 export function getBaseRosterSlotTypeForTeam(team: TeamLike): RosterSlotType | null {
   return getBaseSlotTypeForTeam(team) as RosterSlotType;
 }
@@ -32,6 +39,42 @@ export function resolveRosterSlotTypeForSelection(team: TeamLike, existingSelect
     team,
     existingSelections as ExistingSlotSelection<TeamLike>[],
   ) as RosterSlotType;
+}
+
+export function resolveRosterSelectionsFromPicks<TTeam extends TeamLike>(
+  picks: PickSelectionLike<TTeam>[],
+): Array<{ slotType: RosterSlotType; team: TTeam }> {
+  const orderedPicks = [...picks].sort((left, right) => {
+    const leftTime = left.pickedAt ? new Date(left.pickedAt).getTime() : 0;
+    const rightTime = right.pickedAt ? new Date(right.pickedAt).getTime() : 0;
+    if (leftTime !== rightTime) {
+      return leftTime - rightTime;
+    }
+
+    const leftRound = left.round ?? 0;
+    const rightRound = right.round ?? 0;
+    if (leftRound !== rightRound) {
+      return leftRound - rightRound;
+    }
+
+    const leftPickNumber = left.pickNumber ?? 0;
+    const rightPickNumber = right.pickNumber ?? 0;
+    return leftPickNumber - rightPickNumber;
+  });
+
+  const resolved: Array<{ slotType: RosterSlotType; team: TTeam }> = [];
+  for (const pick of orderedPicks) {
+    if (!pick.team) {
+      continue;
+    }
+
+    resolved.push({
+      slotType: resolveRosterSlotTypeForSelection(pick.team, resolved),
+      team: pick.team,
+    });
+  }
+
+  return resolved;
 }
 
 export function getDraftPickNumber(round: number, pickWithinRound: number, userCount: number) {

@@ -2,7 +2,11 @@ import { NextResponse } from "next/server";
 import { UserRole, type Prisma } from "@prisma/client";
 import { getCurrentUser } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
-import { resolveRosterSlotTypeForSelection, validateRosterSelection } from "@/lib/league-rules";
+import {
+  resolveRosterSelectionsFromPicks,
+  resolveRosterSlotTypeForSelection,
+  validateRosterSelection,
+} from "@/lib/league-rules";
 
 type DraftStatus = "NOT_STARTED" | "IN_PROGRESS" | "PAUSED" | "COMPLETED";
 
@@ -100,11 +104,12 @@ export async function POST(request: Request) {
         continue;
       }
 
-      const existingSelections = await tx.roster.findMany({
+      const existingSelections = await tx.draftPick.findMany({
         where: { leagueId, userId: instruction.userId },
         include: { team: { include: { conference: true } } },
+        orderBy: [{ pickedAt: "asc" }, { round: "asc" }, { pickNumber: "asc" }],
       });
-      const mappedSelections = existingSelections.map((entry) => ({ slotType: entry.slotType, team: entry.team }));
+      const mappedSelections = resolveRosterSelectionsFromPicks(existingSelections);
       const slotType = resolveRosterSlotTypeForSelection(team, mappedSelections);
 
       if (!slotType || !validateRosterSelection(team, mappedSelections)) {

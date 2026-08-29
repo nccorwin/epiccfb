@@ -7,6 +7,7 @@ import { prisma } from "@/lib/prisma";
 import {
   REQUIRED_ROSTER_SLOTS,
   getDraftPickNumber,
+  resolveRosterSelectionsFromPicks,
   resolveRosterSlotTypeForSelection,
   validateRosterSelection,
 } from "@/lib/league-rules";
@@ -201,7 +202,7 @@ export async function POST(
     return NextResponse.json({ error: "User is not part of this league." }, { status: 403 });
   }
 
-  const existingSelections = await prisma.roster.findMany({
+  const existingSelections = await prisma.draftPick.findMany({
     where: { leagueId, userId },
     include: {
       team: {
@@ -210,12 +211,10 @@ export async function POST(
         },
       },
     },
+    orderBy: [{ pickedAt: "asc" }, { round: "asc" }, { pickNumber: "asc" }],
   });
 
-  const mappedSelections = existingSelections.map((entry) => ({
-    slotType: entry.slotType,
-    team: entry.team,
-  }));
+  const mappedSelections = resolveRosterSelectionsFromPicks(existingSelections);
   const slotType = resolveRosterSlotTypeForSelection(team, mappedSelections);
   const selectionIsValid = slotType ? validateRosterSelection(team, mappedSelections) : false;
   if (!slotType || !selectionIsValid) {

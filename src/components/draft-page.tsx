@@ -3,7 +3,6 @@
 import { type DragEvent, type FormEvent, useEffect, useMemo, useState } from "react";
 import { findLikelyManagerMatch } from "@/lib/manager-name-match";
 import {
-  getBaseSlotTypeForTeam,
   getMaxSlotCount,
   resolveSlotTypeForSelection,
   type DraftSlotType,
@@ -86,25 +85,6 @@ function formatTimeLeft(ms: number) {
 
 function resolveTeamSlot(team: Team, existingSelections: Array<{ slotType: DraftSlot; team: Team }>): DraftSlot {
   return resolveSlotTypeForSelection(team, existingSelections);
-}
-
-function toSlotLabel(slotType: DraftSlot) {
-  switch (slotType) {
-    case "BIG_TEN":
-      return "Big Ten";
-    case "BIG_TWELVE":
-      return "Big 12";
-    case "SEC":
-      return "SEC";
-    case "ACC":
-      return "ACC";
-    case "GROUP_OF_FIVE":
-      return "Group of 5";
-    case "FCS":
-      return "FCS";
-    case "WILDCARD":
-      return "Wildcard";
-  }
 }
 
 function getDraftStatus(league: League | null): DraftStatus {
@@ -376,30 +356,9 @@ export default function DraftPage({ currentUser }: { currentUser: DraftPageUser 
       const resolvedSlotCount = activePickSelections.filter((entry) => entry.slotType === resolvedSlot).length;
       const canSelect = resolvedSlotCount < resolvedSlotLimit;
 
-      const baseSlot = getBaseSlotTypeForTeam(team);
-      const baseSlotLimit = getMaxSlotCount(baseSlot);
-      const baseSlotCount = activePickSelections.filter((entry) => entry.slotType === baseSlot).length;
-      const wildcardLimit = getMaxSlotCount("WILDCARD");
-      const wildcardCount = activePickSelections.filter((entry) => entry.slotType === "WILDCARD").length;
-      const overflowsToWildcard = resolvedSlot === "WILDCARD" && baseSlot !== "WILDCARD";
-
-      let reason: string | null = null;
-      if (!canSelect && resolvedSlot === "WILDCARD") {
-        reason = overflowsToWildcard && baseSlotCount >= baseSlotLimit
-          ? `${toSlotLabel(baseSlot)} slots are full and wildcard slots are full.`
-          : "Wildcard slots are already full.";
-      } else if (!canSelect) {
-        reason = `${toSlotLabel(resolvedSlot)} slots are already full.`;
-      } else if (overflowsToWildcard && wildcardCount < wildcardLimit) {
-        reason = `${toSlotLabel(baseSlot)} is full, so this pick uses a wildcard slot.`;
-      } else {
-        reason = `Fills ${toSlotLabel(resolvedSlot)}.`;
-      }
-
       return {
         team,
         canSelect,
-        reason,
       };
     });
   }, [activePickSelections, availableTeams]);
@@ -867,14 +826,10 @@ export default function DraftPage({ currentUser }: { currentUser: DraftPageUser 
                 >
                   {availableTeamOptions.map((option) => (
                     <option key={option.team.id} value={option.team.id} disabled={!option.canSelect}>
-                      {option.team.name} {option.team.conference?.name ? `(${option.team.conference.name})` : ""}{" "}
-                      {option.reason ? `— ${option.reason}` : ""}
+                      {option.team.name} {option.team.conference?.name ? `(${option.team.conference.name})` : ""}
                     </option>
                   ))}
                 </select>
-                <span className="text-xs text-slate-400">
-                  Teams that violate filled slot limits are disabled with an explanation.
-                </span>
               </label>
               {selectableTeamOptions.length === 0 ? (
                 <p className="rounded-xl border border-rose-300/30 bg-rose-300/10 px-3 py-2 text-sm text-rose-100">
