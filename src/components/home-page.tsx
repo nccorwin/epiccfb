@@ -9,11 +9,12 @@ import {
   buildSeasonSummaries,
   fetchSeasonPeriodPayloads,
   getSeasonPeriodKey,
+  type SeasonPeriodPayload,
   type PeriodSummary,
   type SeasonHistoryManager,
   type TeamSummary,
 } from "@/lib/season-summary";
-import { POSTSEASON_PERIOD } from "@/lib/season-periods";
+import { POSTSEASON_PERIOD, type SeasonPeriodValue } from "@/lib/season-periods";
 
 function normalizeTeamName(name: string) {
   return canonicalizeTeamName(name);
@@ -25,6 +26,24 @@ function displayRecord(wins: number, losses: number, pushes: number) {
 
 function displayAtsRecord(wins: number, losses: number, ties: number) {
   return `${wins}-${losses}-${ties}`;
+}
+
+function getLatestCompletedPeriod(periodPayloads: SeasonPeriodPayload[]): SeasonPeriodValue | null {
+  let latest: { period: SeasonPeriodValue; completedAt: number } | null = null;
+  for (const payload of periodPayloads) {
+    for (const game of payload.games) {
+      if (!game.completed || game.homePoints == null || game.awayPoints == null) {
+        continue;
+      }
+
+      const completedAt = game.startDate ? new Date(game.startDate).getTime() : 0;
+      if (!latest || completedAt > latest.completedAt) {
+        latest = { period: payload.periodValue, completedAt };
+      }
+    }
+  }
+
+  return latest?.period ?? null;
 }
 
 export default function HomePage({
@@ -42,6 +61,7 @@ export default function HomePage({
   const [seasonHistory, setSeasonHistory] = useState<SeasonHistoryManager[]>([]);
   const [periodSummaries, setPeriodSummaries] = useState<Record<string, PeriodSummary[]>>({});
   const [allTeamStats, setAllTeamStats] = useState<Record<string, TeamSummary>>({});
+  const [latestCompletedPeriod, setLatestCompletedPeriod] = useState<SeasonPeriodValue | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -58,6 +78,7 @@ export default function HomePage({
       const summaries = buildSeasonSummaries(managers, periodPayloads);
       setPeriodSummaries(summaries.periodSummaries);
       setAllTeamStats(summaries.teamSummaries);
+      setLatestCompletedPeriod(getLatestCompletedPeriod(periodPayloads));
     } catch (loadError) {
       setError(loadError instanceof Error ? loadError.message : "Unable to load data.");
     } finally {
@@ -81,11 +102,19 @@ export default function HomePage({
   }, [periodSummaries]);
 
   const standings = useMemo(() => {
+    const latestCompletedPeriodKey = latestCompletedPeriod == null ? null : getSeasonPeriodKey(latestCompletedPeriod);
+    const latestPeriodSummaries = latestCompletedPeriodKey ? periodSummaries[latestCompletedPeriodKey] ?? [] : [];
+    const latestPeriodSummaryByManager = new Map<string, PeriodSummary>();
+    for (const summary of latestPeriodSummaries) {
+      latestPeriodSummaryByManager.set(summary.manager.key, summary);
+    }
+
     return [...seasonHistory]
       .sort((left, right) => left.finalRank - right.finalRank)
       .map((manager) => ({
         manager,
         stats: postseasonSummaryByManager.get(manager.key) ?? null,
+        latestWeeklyPoints: latestPeriodSummaryByManager.get(manager.key)?.weekly.weeklyPoints ?? 0,
       }))
       .sort((left, right) => {
         const pointDiff = (right.stats?.cumulativePoints ?? 0) - (left.stats?.cumulativePoints ?? 0);
@@ -94,7 +123,7 @@ export default function HomePage({
         }
         return left.manager.finalRank - right.manager.finalRank;
       });
-  }, [postseasonSummaryByManager, seasonHistory]);
+  }, [latestCompletedPeriod, periodSummaries, postseasonSummaryByManager, seasonHistory]);
 
   const me = useMemo(() => {
     const exactByUserId = seasonHistory.find((manager) => manager.userId === currentUser.id);
@@ -122,6 +151,24 @@ export default function HomePage({
   }, [currentUser.email, currentUser.firstName, currentUser.id, currentUser.lastName, currentUser.name, seasonHistory]);
 
   const myStats = me ? postseasonSummaryByManager.get(me.key) ?? null : null;
+  const latestPeriodStatsByManager = useMemo(() => {
+    if (latestCompletedPeriod == null) {
+      return new Map<string, PeriodSummary>();
+    }
+    const latestPeriodKey = getSeasonPeriodKey(latestCompletedPeriod);
+    const summaries = periodSummaries[latestPeriodKey] ?? [];
+    const map = new Map<string, PeriodSummary>();
+    for (const summary of summaries) {
+      map.set(summary.manager.key, summary);
+    }
+    return map;
+  }, [latestCompletedPeriod, periodSummaries]);
+  const myLatestPeriodStats = me ? latestPeriodStatsByManager.get(me.key) ?? null : null;
+  const latestPeriodPointsLabel = latestCompletedPeriod == null
+    ? "Latest week points"
+    : latestCompletedPeriod === "postseason"
+      ? "Postseason points"
+      : `Week ${latestCompletedPeriod} points`;
   const myRank = useMemo(() => {
     if (!me) {
       return null;
@@ -170,9 +217,9 @@ export default function HomePage({
             <p className="mt-1 text-6xl font-bold tabular-nums text-white">{myStats ? myStats.cumulativePoints.toFixed(1) : "--"}</p>
           </div>
           <div className="mb-1">
-            <p className="text-xs uppercase tracking-widest text-slate-500">Latest period points</p>
+            <p className="text-xs uppercase tracking-widest text-slate-500">{latestPeriodPointsLabel}</p>
             <p className="text-3xl font-semibold tabular-nums text-emerald-300">
-              +{myStats ? myStats.weekly.weeklyPoints.toFixed(1) : "0.0"}
+              +{myLatestPeriodStats ? myLatestPeriodStats.weekly.weeklyPoints.toFixed(1) : "0.0"}
             </p>
           </div>
           <div className="mb-1">
@@ -210,12 +257,12 @@ export default function HomePage({
                 <th className="pb-3 pr-4">Manager</th>
                 <th className="pb-3 pr-4 text-right">Record</th>
                 <th className="pb-3 pr-4 text-right">ATS</th>
-                <th className="pb-3 pr-4 text-right">Latest pts</th>
+                <th className="pb-3 pr-4 text-right">{latestCompletedPeriod === "postseason" ? "Postseason pts" : "Latest wk pts"}</th>
                 <th className="pb-3 text-right">Season pts</th>
               </tr>
             </thead>
             <tbody>
-              {standings.map(({ manager, stats }, index) => {
+              {standings.map(({ manager, stats, latestWeeklyPoints }, index) => {
                 const isSelf = me?.key === manager.key || manager.userId === currentUser.id;
                 return (
                   <tr
@@ -234,7 +281,7 @@ export default function HomePage({
                       {stats ? displayAtsRecord(stats.cumulativeAtsWins, stats.cumulativeAtsLosses, stats.cumulativeAtsPushes) : "--"}
                     </td>
                     <td className="py-3 pr-4 text-right tabular-nums text-emerald-300">
-                      +{stats ? stats.weekly.weeklyPoints.toFixed(1) : "0.0"}
+                      +{latestWeeklyPoints.toFixed(1)}
                     </td>
                     <td className="py-3 text-right tabular-nums font-bold text-white">{stats ? stats.cumulativePoints.toFixed(1) : "0.0"}</td>
                   </tr>
