@@ -59,6 +59,7 @@ export async function GET(
         awayScore: game.result?.awayScore ?? 0,
         spreadHome: line?.spreadHome,
         spreadAway: line?.spreadAway,
+        completed: game.completed,
       });
 
       points += roster.teamId === game.homeTeamId ? result.home.totalPoints : result.away.totalPoints;

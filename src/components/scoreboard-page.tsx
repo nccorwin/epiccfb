@@ -104,6 +104,7 @@ function GameCard({
     awayScore: game.awayPoints ?? 0,
     spreadHome,
     spreadAway,
+    completed: game.completed,
   });
   const computedBonusPoints = bonusPoints ?? calculateGameBonusPoints({
     game,
@@ -354,6 +355,7 @@ export default function ScoreboardPage() {
         awayScore: game.awayPoints,
         spreadHome,
         spreadAway,
+        completed: "completed" in game ? game.completed : true,
       });
       const bonusPoints = calculatePostseasonGameBonusPoints({
         game: {
@@ -395,6 +397,7 @@ export default function ScoreboardPage() {
         awayScore: game.awayPoints,
         spreadHome,
         spreadAway,
+        completed: game.completed,
       });
       const notes = game.notes ?? null;
       const bonusPoints = notes && (notes.includes("College Football Playoff") || notes.includes("FCS Championship"))

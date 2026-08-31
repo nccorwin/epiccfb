@@ -226,12 +226,12 @@ export function buildSeasonSummaries(
       const primaryLine = line?.lines.find((entry) => entry.spread != null) ?? line?.lines[0];
       const spreadHome = primaryLine?.spread ?? null;
       const spreadAway = spreadHome != null ? -spreadHome : null;
-      const hasSpread = spreadHome != null;
       const breakdown = calculateTeamGamePoints({
         homeScore: game.homePoints,
         awayScore: game.awayPoints,
         spreadHome,
         spreadAway,
+        completed: game.completed,
       });
       const bonusPoints = calculatePostseasonGameBonusPoints({
         game: {
@@ -274,24 +274,20 @@ export function buildSeasonSummaries(
       teamTotals[homeTeam].points += breakdown.home.totalPoints + bonusPoints.home;
       teamTotals[awayTeam].points += breakdown.away.totalPoints + bonusPoints.away;
 
-      if (hasSpread) {
-        if (breakdown.home.coverPoints === 1) {
-          teamTotals[homeTeam].atsWins += 1;
-        } else if (breakdown.home.coverPoints === 0.5) {
-          teamTotals[homeTeam].atsPushes += 1;
-        } else {
-          teamTotals[homeTeam].atsLosses += 1;
-        }
+      if (breakdown.home.coverPoints === 1) {
+        teamTotals[homeTeam].atsWins += 1;
+      } else if (breakdown.home.coverPoints === 0.5) {
+        teamTotals[homeTeam].atsPushes += 1;
+      } else {
+        teamTotals[homeTeam].atsLosses += 1;
       }
 
-      if (hasSpread) {
-        if (breakdown.away.coverPoints === 1) {
-          teamTotals[awayTeam].atsWins += 1;
-        } else if (breakdown.away.coverPoints === 0.5) {
-          teamTotals[awayTeam].atsPushes += 1;
-        } else {
-          teamTotals[awayTeam].atsLosses += 1;
-        }
+      if (breakdown.away.coverPoints === 1) {
+        teamTotals[awayTeam].atsWins += 1;
+      } else if (breakdown.away.coverPoints === 0.5) {
+        teamTotals[awayTeam].atsPushes += 1;
+      } else {
+        teamTotals[awayTeam].atsLosses += 1;
       }
 
       if (homeOwnerKey) {
@@ -311,17 +307,15 @@ export function buildSeasonSummaries(
           }
 
           cumulative.cumulativePoints += breakdown.home.totalPoints + bonusPoints.home;
-          if (hasSpread) {
-            if (breakdown.home.coverPoints === 1) {
-              weekly.weeklyAtsWins += 1;
-              cumulative.cumulativeAtsWins += 1;
-            } else if (breakdown.home.coverPoints === 0.5) {
-              weekly.weeklyAtsPushes += 1;
-              cumulative.cumulativeAtsPushes += 1;
-            } else {
-              weekly.weeklyAtsLosses += 1;
-              cumulative.cumulativeAtsLosses += 1;
-            }
+          if (breakdown.home.coverPoints === 1) {
+            weekly.weeklyAtsWins += 1;
+            cumulative.cumulativeAtsWins += 1;
+          } else if (breakdown.home.coverPoints === 0.5) {
+            weekly.weeklyAtsPushes += 1;
+            cumulative.cumulativeAtsPushes += 1;
+          } else {
+            weekly.weeklyAtsLosses += 1;
+            cumulative.cumulativeAtsLosses += 1;
           }
         }
       }
@@ -343,17 +337,15 @@ export function buildSeasonSummaries(
           }
 
           cumulative.cumulativePoints += breakdown.away.totalPoints + bonusPoints.away;
-          if (hasSpread) {
-            if (breakdown.away.coverPoints === 1) {
-              weekly.weeklyAtsWins += 1;
-              cumulative.cumulativeAtsWins += 1;
-            } else if (breakdown.away.coverPoints === 0.5) {
-              weekly.weeklyAtsPushes += 1;
-              cumulative.cumulativeAtsPushes += 1;
-            } else {
-              weekly.weeklyAtsLosses += 1;
-              cumulative.cumulativeAtsLosses += 1;
-            }
+          if (breakdown.away.coverPoints === 1) {
+            weekly.weeklyAtsWins += 1;
+            cumulative.cumulativeAtsWins += 1;
+          } else if (breakdown.away.coverPoints === 0.5) {
+            weekly.weeklyAtsPushes += 1;
+            cumulative.cumulativeAtsPushes += 1;
+          } else {
+            weekly.weeklyAtsLosses += 1;
+            cumulative.cumulativeAtsLosses += 1;
           }
         }
       }

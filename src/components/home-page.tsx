@@ -23,6 +23,10 @@ function displayRecord(wins: number, losses: number, pushes: number) {
   return `${wins}-${losses}${pushes ? `-${pushes}` : ""}`;
 }
 
+function displayAtsRecord(wins: number, losses: number, ties: number) {
+  return `${wins}-${losses}-${ties}`;
+}
+
 export default function HomePage({
   currentUser,
 }: {
@@ -187,9 +191,9 @@ export default function HomePage({
               </strong>
             </span>
             <span>
-              Season ATS:{" "}
+              Season ATS (W-L-T):{" "}
               <strong className="text-slate-200">
-                {displayRecord(myStats.cumulativeAtsWins, myStats.cumulativeAtsLosses, myStats.cumulativeAtsPushes)}
+                {displayAtsRecord(myStats.cumulativeAtsWins, myStats.cumulativeAtsLosses, myStats.cumulativeAtsPushes)}
               </strong>
             </span>
           </div>
@@ -227,7 +231,7 @@ export default function HomePage({
                       {stats ? displayRecord(stats.cumulativeWins, stats.cumulativeLosses, stats.cumulativePushes) : "--"}
                     </td>
                     <td className="py-3 pr-4 text-right tabular-nums text-slate-300">
-                      {stats ? displayRecord(stats.cumulativeAtsWins, stats.cumulativeAtsLosses, stats.cumulativeAtsPushes) : "--"}
+                      {stats ? displayAtsRecord(stats.cumulativeAtsWins, stats.cumulativeAtsLosses, stats.cumulativeAtsPushes) : "--"}
                     </td>
                     <td className="py-3 pr-4 text-right tabular-nums text-emerald-300">
                       +{stats ? stats.weekly.weeklyPoints.toFixed(1) : "0.0"}
@@ -266,7 +270,7 @@ export default function HomePage({
                     <span>
                       ATS:{" "}
                       <strong className="text-slate-200">
-                        {stats ? displayRecord(stats.atsWins, stats.atsLosses, stats.atsPushes) : "--"}
+                        {stats ? displayAtsRecord(stats.atsWins, stats.atsLosses, stats.atsPushes) : "--"}
                       </strong>
                     </span>
                     <span>

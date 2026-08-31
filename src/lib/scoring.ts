@@ -9,11 +9,13 @@ export function calculateTeamGamePoints({
   awayScore,
   spreadHome,
   spreadAway,
+  completed = true,
 }: {
   homeScore: number;
   awayScore: number;
   spreadHome?: number | null;
   spreadAway?: number | null;
+  completed?: boolean;
 }): { home: ScoringBreakdown; away: ScoringBreakdown } {
   const homeWin = homeScore > awayScore ? 1 : 0;
   const awayWin = awayScore > homeScore ? 1 : 0;
@@ -24,6 +26,7 @@ export function calculateTeamGamePoints({
     homeScore,
     awayScore,
     isHomeTeam: true,
+    completed,
   });
   const awayCover = calculateCoverPoints({
     favoriteSpread: spreadHome,
@@ -31,6 +34,7 @@ export function calculateTeamGamePoints({
     homeScore,
     awayScore,
     isHomeTeam: false,
+    completed,
   });
 
   return {
@@ -53,12 +57,14 @@ function calculateCoverPoints({
   homeScore,
   awayScore,
   isHomeTeam,
+  completed,
 }: {
   favoriteSpread?: number | null;
   underdogSpread?: number | null;
   homeScore: number;
   awayScore: number;
   isHomeTeam: boolean;
+  completed: boolean;
 }) {
   // spread is negative for a favorite (e.g. -24.5) and positive for an underdog (+24.5).
   // A team covers when their actual margin PLUS their spread is positive.
@@ -66,7 +72,7 @@ function calculateCoverPoints({
   //   Away covers: (awayScore - homeScore) + spreadAway > 0
   const spread = isHomeTeam ? favoriteSpread : underdogSpread;
   if (spread == null) {
-    return 0;
+    return completed ? 0.5 : 0;
   }
 
   const margin = homeScore - awayScore;
@@ -89,6 +95,7 @@ export function calculateWeeklyScoreForRoster(games: Array<{
   awayScore: number;
   spreadHome?: number | null;
   spreadAway?: number | null;
+  completed?: boolean;
 }>) {
   return games.reduce((total, game) => {
     const points = calculateTeamGamePoints({
@@ -96,6 +103,7 @@ export function calculateWeeklyScoreForRoster(games: Array<{
       awayScore: game.awayScore,
       spreadHome: game.spreadHome,
       spreadAway: game.spreadAway,
+      completed: game.completed ?? true,
     });
 
     return total + points.home.totalPoints + points.away.totalPoints;

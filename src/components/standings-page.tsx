@@ -29,6 +29,10 @@ function formatRecord(wins: number, losses: number, pushes: number) {
   return `${wins}-${losses}${pushes ? `-${pushes}` : ""}`;
 }
 
+function formatAtsRecord(wins: number, losses: number, ties: number) {
+  return `${wins}-${losses}-${ties}`;
+}
+
 export default function StandingsPage() {
   const [selectedPeriod, setSelectedPeriod] = useState<SeasonPeriodValue>(() => getCurrentSeasonPeriod(CURRENT_SEASON));
   const [season, setSeason] = useState<number | null>(null);
@@ -157,9 +161,9 @@ export default function StandingsPage() {
                 <tr>
                   <th className="rounded-l-xl border border-white/10 bg-white/5 px-4 py-3 text-left">Manager</th>
                   <th className="border border-white/10 bg-white/5 px-4 py-3 text-left">Weekly W-L</th>
-                  <th className="border border-white/10 bg-white/5 px-4 py-3 text-left">Weekly ATS</th>
+                  <th className="border border-white/10 bg-white/5 px-4 py-3 text-left">Weekly ATS (W-L-T)</th>
                   <th className="border border-white/10 bg-white/5 px-4 py-3 text-left">Cumulative W-L</th>
-                  <th className="border border-white/10 bg-white/5 px-4 py-3 text-left">Cumulative ATS</th>
+                  <th className="border border-white/10 bg-white/5 px-4 py-3 text-left">Cumulative ATS (W-L-T)</th>
                   <th className="border border-white/10 bg-white/5 px-4 py-3 text-left">Weekly Points</th>
                   <th className="rounded-r-xl border border-white/10 bg-white/5 px-4 py-3 text-left">
                     Cumulative Points
@@ -179,7 +183,7 @@ export default function StandingsPage() {
                       {formatRecord(entry.weekly.weeklyWins, entry.weekly.weeklyLosses, entry.weekly.weeklyPushes)}
                     </td>
                     <td className="border border-white/10 bg-slate-950/70 px-4 py-3 text-white">
-                      {formatRecord(
+                      {formatAtsRecord(
                         entry.weekly.weeklyAtsWins,
                         entry.weekly.weeklyAtsLosses,
                         entry.weekly.weeklyAtsPushes,
@@ -189,7 +193,7 @@ export default function StandingsPage() {
                       {formatRecord(entry.cumulativeWins, entry.cumulativeLosses, entry.cumulativePushes)}
                     </td>
                     <td className="border border-white/10 bg-slate-950/70 px-4 py-3 text-white">
-                      {formatRecord(entry.cumulativeAtsWins, entry.cumulativeAtsLosses, entry.cumulativeAtsPushes)}
+                      {formatAtsRecord(entry.cumulativeAtsWins, entry.cumulativeAtsLosses, entry.cumulativeAtsPushes)}
                     </td>
                     <td className="border border-white/10 bg-slate-950/70 px-4 py-3 text-white">
                       {entry.weekly.weeklyPoints.toFixed(1)}

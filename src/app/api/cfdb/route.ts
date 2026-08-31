@@ -72,6 +72,7 @@ export async function GET(request: Request) {
           awayScore: game.awayPoints ?? 0,
           spreadHome,
           spreadAway,
+          completed: game.completed,
         });
         const notes = game.notes ?? null;
         const bonusPoints = notes && (notes.includes("College Football Playoff") || notes.includes("FCS Championship"))
