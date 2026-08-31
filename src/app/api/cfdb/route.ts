@@ -2,6 +2,7 @@
 import { calculateTeamGamePoints } from "@/lib/scoring";
 import { calculateGameBonusPoints, calculatePostseasonGameBonusPoints, createPostseasonBonusTracker } from "@/lib/game-bonus";
 import { CFDB_BASE_URL, getGameResultsForWeek, getLineDataForWeek, getPostseasonData, getWeekData } from "@/lib/cfdb";
+import { CURRENT_SEASON } from "@/lib/current-season";
 import { canonicalizeTeamName } from "@/lib/team-name";
 
 function normalizeTeamName(teamName: string) {
@@ -19,7 +20,7 @@ function findLineForGame(lines: Awaited<ReturnType<typeof getLineDataForWeek>>, 
 
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
-  const season = Number(searchParams.get("season") ?? "2025");
+  const season = Number(searchParams.get("season") ?? String(CURRENT_SEASON));
   const week = Number(searchParams.get("week") ?? "1");
   const action = searchParams.get("type") ?? searchParams.get("action") ?? "info";
 

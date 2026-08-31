@@ -1,6 +1,8 @@
 'use client';
 
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { fetchCurrentSeasonLeagueContext } from "@/lib/active-league";
+import { CURRENT_SEASON } from "@/lib/current-season";
 import { canonicalizeTeamName } from "@/lib/team-name";
 import { isLikelySameManager } from "@/lib/manager-name-match";
 import {
@@ -12,13 +14,6 @@ import {
   type TeamSummary,
 } from "@/lib/season-summary";
 import { POSTSEASON_PERIOD } from "@/lib/season-periods";
-
-type LeagueHistoryResponse = {
-  season: number;
-  managers: SeasonHistoryManager[];
-};
-
-const TARGET_SEASON = 2025;
 
 function normalizeTeamName(name: string) {
   return canonicalizeTeamName(name);
@@ -39,6 +34,7 @@ export default function HomePage({
     name: string | null;
   };
 }) {
+  const [season, setSeason] = useState(CURRENT_SEASON);
   const [seasonHistory, setSeasonHistory] = useState<SeasonHistoryManager[]>([]);
   const [periodSummaries, setPeriodSummaries] = useState<Record<string, PeriodSummary[]>>({});
   const [allTeamStats, setAllTeamStats] = useState<Record<string, TeamSummary>>({});
@@ -50,15 +46,11 @@ export default function HomePage({
     setError(null);
 
     try {
-      const historyResponse = await fetch(`/api/league-history?season=${TARGET_SEASON}`);
-      if (!historyResponse.ok) {
-        throw new Error("Unable to load league history.");
-      }
-
-      const historyPayload: LeagueHistoryResponse = await historyResponse.json();
-      const managers = Array.isArray(historyPayload.managers) ? historyPayload.managers : [];
+      const context = await fetchCurrentSeasonLeagueContext();
+      const managers = context.managers;
+      setSeason(context.season);
       setSeasonHistory(managers);
-      const periodPayloads = await fetchSeasonPeriodPayloads(TARGET_SEASON);
+      const periodPayloads = await fetchSeasonPeriodPayloads(context.season);
       const summaries = buildSeasonSummaries(managers, periodPayloads);
       setPeriodSummaries(summaries.periodSummaries);
       setAllTeamStats(summaries.teamSummaries);
@@ -74,10 +66,6 @@ export default function HomePage({
     void loadData();
   }, [loadData]);
 
-  const standings = useMemo(() => {
-    return [...seasonHistory].sort((left, right) => left.finalRank - right.finalRank);
-  }, [seasonHistory]);
-
   const postseasonSummaryByManager = useMemo(() => {
     const postseasonSummaryKey = getSeasonPeriodKey(POSTSEASON_PERIOD.value);
     const postseasonSummaries = periodSummaries[postseasonSummaryKey] ?? [];
@@ -87,6 +75,22 @@ export default function HomePage({
     }
     return map;
   }, [periodSummaries]);
+
+  const standings = useMemo(() => {
+    return [...seasonHistory]
+      .sort((left, right) => left.finalRank - right.finalRank)
+      .map((manager) => ({
+        manager,
+        stats: postseasonSummaryByManager.get(manager.key) ?? null,
+      }))
+      .sort((left, right) => {
+        const pointDiff = (right.stats?.cumulativePoints ?? 0) - (left.stats?.cumulativePoints ?? 0);
+        if (pointDiff !== 0) {
+          return pointDiff;
+        }
+        return left.manager.finalRank - right.manager.finalRank;
+      });
+  }, [postseasonSummaryByManager, seasonHistory]);
 
   const me = useMemo(() => {
     const exactByUserId = seasonHistory.find((manager) => manager.userId === currentUser.id);
@@ -114,7 +118,13 @@ export default function HomePage({
   }, [currentUser.email, currentUser.firstName, currentUser.id, currentUser.lastName, currentUser.name, seasonHistory]);
 
   const myStats = me ? postseasonSummaryByManager.get(me.key) ?? null : null;
-  const myRank = me?.finalRank ?? null;
+  const myRank = useMemo(() => {
+    if (!me) {
+      return null;
+    }
+    const index = standings.findIndex((entry) => entry.manager.key === me.key);
+    return index >= 0 ? index + 1 : null;
+  }, [me, standings]);
   const fallbackCurrentUserName =
     [currentUser.firstName, currentUser.lastName].filter(Boolean).join(" ").trim() ||
     currentUser.name ||
@@ -124,7 +134,7 @@ export default function HomePage({
   if (loading) {
     return (
       <div className="flex min-h-[60vh] items-center justify-center">
-        <p className="animate-pulse text-slate-400">Loading your 2025 season recap...</p>
+        <p className="animate-pulse text-slate-400">Loading your {season} season overview...</p>
       </div>
     );
   }
@@ -140,8 +150,8 @@ export default function HomePage({
   if (!seasonHistory.length) {
     return (
       <div className="flex min-h-[60vh] flex-col items-center justify-center gap-4 text-center">
-        <p className="text-xl font-semibold text-slate-200">No 2025 history data available.</p>
-        <p className="text-slate-400">Run the league history CSV import to load season recap records.</p>
+        <p className="text-xl font-semibold text-slate-200">No {season} league data available.</p>
+        <p className="text-slate-400">Load managers and draft picks for the current season to continue.</p>
       </div>
     );
   }
@@ -152,17 +162,17 @@ export default function HomePage({
         <p className="text-sm font-semibold uppercase tracking-[0.3em] text-emerald-400">{myName}</p>
         <div className="mt-4 flex flex-wrap items-end gap-8">
           <div>
-            <p className="text-xs uppercase tracking-widest text-slate-500">Final points (CSV)</p>
-            <p className="mt-1 text-6xl font-bold tabular-nums text-white">{me ? me.totalPoints.toFixed(1) : "--"}</p>
+            <p className="text-xs uppercase tracking-widest text-slate-500">Season-to-date points</p>
+            <p className="mt-1 text-6xl font-bold tabular-nums text-white">{myStats ? myStats.cumulativePoints.toFixed(1) : "--"}</p>
           </div>
           <div className="mb-1">
-            <p className="text-xs uppercase tracking-widest text-slate-500">Postseason points</p>
+            <p className="text-xs uppercase tracking-widest text-slate-500">Latest period points</p>
             <p className="text-3xl font-semibold tabular-nums text-emerald-300">
               +{myStats ? myStats.weekly.weeklyPoints.toFixed(1) : "0.0"}
             </p>
           </div>
           <div className="mb-1">
-            <p className="text-xs uppercase tracking-widest text-slate-500">Final rank</p>
+            <p className="text-xs uppercase tracking-widest text-slate-500">Current rank</p>
             <p className="text-3xl font-semibold tabular-nums text-slate-200">
               #{myRank ?? "--"} <span className="text-lg text-slate-500">of {seasonHistory.length}</span>
             </p>
@@ -187,10 +197,7 @@ export default function HomePage({
       </section>
 
       <section className="rounded-3xl border border-white/10 bg-slate-900/70 p-8 shadow-xl">
-        <h2 className="mb-6 text-lg font-semibold text-white">2025 final standings</h2>
-        <div className="mb-4 rounded-2xl border border-emerald-500/20 bg-emerald-500/10 px-4 py-3 text-sm text-emerald-200">
-          Final standings now use the same postseason cumulative source as the Standings tab.
-        </div>
+        <h2 className="mb-6 text-lg font-semibold text-white">{season} standings to date</h2>
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead>
@@ -199,20 +206,19 @@ export default function HomePage({
                 <th className="pb-3 pr-4">Manager</th>
                 <th className="pb-3 pr-4 text-right">Record</th>
                 <th className="pb-3 pr-4 text-right">ATS</th>
-                <th className="pb-3 pr-4 text-right">Wk 17 pts</th>
-                <th className="pb-3 text-right">Final pts (CSV)</th>
+                <th className="pb-3 pr-4 text-right">Latest pts</th>
+                <th className="pb-3 text-right">Season pts</th>
               </tr>
             </thead>
             <tbody>
-              {standings.map((manager) => {
+              {standings.map(({ manager, stats }, index) => {
                 const isSelf = me?.key === manager.key || manager.userId === currentUser.id;
-                const stats = postseasonSummaryByManager.get(manager.key) ?? null;
                 return (
                   <tr
                     key={manager.key}
                     className={`border-b border-white/5 transition ${isSelf ? "bg-emerald-500/5" : "hover:bg-white/3"}`}
                   >
-                    <td className={`py-3 pr-3 font-mono text-xs ${isSelf ? "text-emerald-400" : "text-slate-500"}`}>{manager.finalRank}</td>
+                    <td className={`py-3 pr-3 font-mono text-xs ${isSelf ? "text-emerald-400" : "text-slate-500"}`}>{index + 1}</td>
                     <td className={`py-3 pr-4 font-medium ${isSelf ? "text-emerald-200" : "text-slate-100"}`}>
                       {manager.displayName}
                       {isSelf && <span className="ml-2 rounded-full bg-emerald-500/20 px-2 py-0.5 text-xs text-emerald-300">you</span>}
@@ -226,7 +232,7 @@ export default function HomePage({
                     <td className="py-3 pr-4 text-right tabular-nums text-emerald-300">
                       +{stats ? stats.weekly.weeklyPoints.toFixed(1) : "0.0"}
                     </td>
-                    <td className="py-3 text-right tabular-nums font-bold text-white">{manager.totalPoints.toFixed(1)}</td>
+                    <td className="py-3 text-right tabular-nums font-bold text-white">{stats ? stats.cumulativePoints.toFixed(1) : "0.0"}</td>
                   </tr>
                 );
               })}
@@ -236,9 +242,9 @@ export default function HomePage({
       </section>
 
       <section className="rounded-3xl border border-white/10 bg-slate-900/70 p-8 shadow-xl">
-        <h2 className="mb-6 text-lg font-semibold text-white">My 2025 roster</h2>
+        <h2 className="mb-6 text-lg font-semibold text-white">My {season} roster</h2>
         {!me || !me.teams.length ? (
-          <p className="text-slate-400">No roster data found for your account in the 2025 history file.</p>
+          <p className="text-slate-400">No roster data found for your account in the current season draft.</p>
         ) : (
           <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
             {me.teams.map((teamName) => {

@@ -13,9 +13,9 @@ export default async function AppLayout({ children }: { children: React.ReactNod
 
   const tabs = [
     { href: "/", label: "Home" },
-    { href: "/draft", label: "Draft" },
     { href: "/scoreboard", label: "Scoreboard" },
     { href: "/standings", label: "Standings" },
+    { href: "/draft", label: "Draft Results" },
     { href: "/league-history", label: "League History" },
     ...(isAdmin ? [{ href: "/admin", label: "Admin" }] : []),
   ];

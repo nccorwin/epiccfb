@@ -5,26 +5,33 @@ const { client, getGames, getLines, getCfpGames } = require("cfbd");
 
 const ROOT_DIR = path.join(__dirname, "..");
 const CACHE_DIR = path.join(ROOT_DIR, "data", "scoreboard");
-const SEASON = 2025;
-const SEASON_FILE = path.join(CACHE_DIR, `${SEASON}.json`);
-const WEEK_DATE_RANGES = [
-  { week: 0, start: "2025-08-19", end: "2025-08-25" },
-  { week: 1, start: "2025-08-26", end: "2025-09-01" },
-  { week: 2, start: "2025-09-02", end: "2025-09-08" },
-  { week: 3, start: "2025-09-09", end: "2025-09-15" },
-  { week: 4, start: "2025-09-16", end: "2025-09-22" },
-  { week: 5, start: "2025-09-23", end: "2025-09-29" },
-  { week: 6, start: "2025-09-30", end: "2025-10-06" },
-  { week: 7, start: "2025-10-07", end: "2025-10-13" },
-  { week: 8, start: "2025-10-14", end: "2025-10-20" },
-  { week: 9, start: "2025-10-21", end: "2025-10-27" },
-  { week: 10, start: "2025-10-28", end: "2025-11-03" },
-  { week: 11, start: "2025-11-04", end: "2025-11-10" },
-  { week: 12, start: "2025-11-11", end: "2025-11-17" },
-  { week: 13, start: "2025-11-18", end: "2025-11-24" },
-  { week: 14, start: "2025-11-25", end: "2025-12-01" },
-  { week: 15, start: "2025-12-02", end: "2025-12-08" },
+const DEFAULT_SEASON = 2026;
+const WEEK_DATE_RANGE_TEMPLATES = [
+  { week: 0, startMonthDay: "08-19", endMonthDay: "08-25" },
+  { week: 1, startMonthDay: "08-26", endMonthDay: "09-01" },
+  { week: 2, startMonthDay: "09-02", endMonthDay: "09-08" },
+  { week: 3, startMonthDay: "09-09", endMonthDay: "09-15" },
+  { week: 4, startMonthDay: "09-16", endMonthDay: "09-22" },
+  { week: 5, startMonthDay: "09-23", endMonthDay: "09-29" },
+  { week: 6, startMonthDay: "09-30", endMonthDay: "10-06" },
+  { week: 7, startMonthDay: "10-07", endMonthDay: "10-13" },
+  { week: 8, startMonthDay: "10-14", endMonthDay: "10-20" },
+  { week: 9, startMonthDay: "10-21", endMonthDay: "10-27" },
+  { week: 10, startMonthDay: "10-28", endMonthDay: "11-03" },
+  { week: 11, startMonthDay: "11-04", endMonthDay: "11-10" },
+  { week: 12, startMonthDay: "11-11", endMonthDay: "11-17" },
+  { week: 13, startMonthDay: "11-18", endMonthDay: "11-24" },
+  { week: 14, startMonthDay: "11-25", endMonthDay: "12-01" },
+  { week: 15, startMonthDay: "12-02", endMonthDay: "12-08" },
 ];
+
+function buildWeekDateRanges(season) {
+  return WEEK_DATE_RANGE_TEMPLATES.map((range) => ({
+    week: range.week,
+    start: `${season}-${range.startMonthDay}`,
+    end: `${season}-${range.endMonthDay}`,
+  }));
+}
 
 function loadEnvFile(filePath, { override = false } = {}) {
   if (!fs.existsSync(filePath)) {
@@ -227,24 +234,24 @@ async function getWeekData(season, week) {
   return { lines, games };
 }
 
-function getWeekForDate(dateString) {
+function getWeekForDate(dateString, weekDateRanges) {
   if (!dateString) {
     return null;
   }
 
   const datePart = dateString.slice(0, 10);
-  const match = WEEK_DATE_RANGES.find((range) => datePart >= range.start && datePart <= range.end);
+  const match = weekDateRanges.find((range) => datePart >= range.start && datePart <= range.end);
   return match ? match.week : null;
 }
 
-function partitionByWeek(items) {
+function partitionByWeek(items, weekDateRanges) {
   const partitions = {};
   for (let week = 0; week <= 15; week += 1) {
     partitions[String(week)] = [];
   }
 
   for (const item of items) {
-    const week = getWeekForDate(item.startDate);
+    const week = getWeekForDate(item.startDate, weekDateRanges);
     if (week != null) {
       const bucket = partitions[String(week)];
       bucket.push(item);
@@ -339,14 +346,15 @@ async function getPostseasonData(season) {
 }
 
 async function buildSeasonCache(season) {
+  const weekDateRanges = buildWeekDateRanges(season);
   const [regularGames, regularLines, postseason] = await Promise.all([
     getGamesWithFcs({ year: season, seasonType: "regular" }),
     getLinesWithFcs({ year: season, seasonType: "regular" }),
     getPostseasonData(season),
   ]);
 
-  const regularGamesByWeek = partitionByWeek(regularGames);
-  const regularLinesByWeek = partitionByWeek(regularLines);
+  const regularGamesByWeek = partitionByWeek(regularGames, weekDateRanges);
+  const regularLinesByWeek = partitionByWeek(regularLines, weekDateRanges);
   const weeks = {};
   for (let week = 0; week <= 15; week += 1) {
     weeks[String(week)] = {
@@ -376,13 +384,20 @@ async function buildSeasonCache(season) {
 
 async function main() {
   loadEnvironment();
-  const season = SEASON;
+  const argSeason = Number(process.argv[2]);
+  const envSeason = Number(process.env.SCOREBOARD_SEASON);
+  const season = Number.isInteger(argSeason)
+    ? argSeason
+    : Number.isInteger(envSeason)
+      ? envSeason
+      : DEFAULT_SEASON;
+  const seasonFile = path.join(CACHE_DIR, `${season}.json`);
 
   const cache = await buildSeasonCache(season);
   await fsp.mkdir(CACHE_DIR, { recursive: true });
-  await fsp.writeFile(SEASON_FILE, `${JSON.stringify(cache, null, 2)}\n`, "utf8");
+  await fsp.writeFile(seasonFile, `${JSON.stringify(cache, null, 2)}\n`, "utf8");
 
-  console.log(`Wrote scoreboard cache for ${season} to ${path.relative(process.cwd(), SEASON_FILE)}`);
+  console.log(`Wrote scoreboard cache for ${season} to ${path.relative(process.cwd(), seasonFile)}`);
 }
 
 main().catch((error) => {

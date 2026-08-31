@@ -1,15 +1,12 @@
 'use client';
 
 import { useEffect, useMemo, useState } from "react";
+import { fetchCurrentSeasonLeagueContext } from "@/lib/active-league";
 import { calculateTeamGamePoints } from "@/lib/scoring";
 import { calculateGameBonusPoints, calculatePostseasonGameBonusPoints, createPostseasonBonusTracker } from "@/lib/game-bonus";
 import { canonicalizeTeamName } from "@/lib/team-name";
 import { getSeasonPeriodLabel, POSTSEASON_PERIOD, SEASON_PERIODS, type SeasonPeriodValue } from "@/lib/season-periods";
-
-type ManagerEntry = {
-  displayName: string;
-  teams: string[];
-};
+import type { SeasonHistoryManager } from "@/lib/season-summary";
 
 type GameResult = {
   id: number;
@@ -199,7 +196,8 @@ function GameCard({
 }
 
 export default function ScoreboardPage() {
-  const [managers, setManagers] = useState<ManagerEntry[]>([]);
+  const [season, setSeason] = useState<number | null>(null);
+  const [managers, setManagers] = useState<SeasonHistoryManager[]>([]);
   const [games, setGames] = useState<GameResult[]>([]);
   const [lines, setLines] = useState<LineResult[]>([]);
   const [cfpMatchupInfo, setCfpMatchupInfo] = useState<CfpMatchupInfo[]>([]);
@@ -221,14 +219,13 @@ export default function ScoreboardPage() {
     setMessage(null);
 
     try {
-      // Load team ownership from the 2025 league history (CSV-based, authoritative)
-      const historyRes = await fetch("/api/league-history?season=2025");
-      if (!historyRes.ok) throw new Error("Unable to load league history.");
-      const historyPayload = await historyRes.json();
-      setManagers(Array.isArray(historyPayload?.managers) ? historyPayload.managers : []);
+      const context = await fetchCurrentSeasonLeagueContext();
+      const targetSeason = context.season;
+      setSeason(targetSeason);
+      setManagers(context.managers);
 
       if (isPostseason) {
-        const postRes = await fetch("/api/cfdb?season=2025&type=postseasonData");
+        const postRes = await fetch(`/api/cfdb?season=${targetSeason}&type=postseasonData`);
         if (!postRes.ok) throw new Error("Unable to load postseason data.");
         const postPayload = await postRes.json();
         setGames(Array.isArray(postPayload?.games) ? postPayload.games : []);
@@ -238,7 +235,7 @@ export default function ScoreboardPage() {
         setPriorFcsFirstRoundTeams(Array.isArray(postPayload?.priorFcsFirstRoundTeams) ? postPayload.priorFcsFirstRoundTeams : []);
       } else {
         const weekNum = Number(selectedView);
-        const weekRes = await fetch(`/api/cfdb?season=2025&week=${weekNum}&type=weekData`);
+        const weekRes = await fetch(`/api/cfdb?season=${targetSeason}&week=${weekNum}&type=weekData`);
         if (!weekRes.ok) throw new Error("Unable to load week data.");
         const weekPayload = await weekRes.json();
         setGames(Array.isArray(weekPayload?.games) ? weekPayload.games : []);
@@ -446,7 +443,9 @@ export default function ScoreboardPage() {
         <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
           <div>
             <p className="text-sm font-semibold uppercase tracking-[0.3em] text-emerald-400">Weekly scoreboard</p>
-            <h2 className="mt-2 text-3xl font-semibold text-white">Week-by-week results</h2>
+            <h2 className="mt-2 text-3xl font-semibold text-white">
+              Week-by-week results{season ? ` - ${season}` : ""}
+            </h2>
             <p className="mt-3 max-w-2xl text-sm leading-7 text-slate-300">
               Review completed, in-progress, and upcoming games. Only FBS and FCS matchups are shown. Select a week or postseason view below.
             </p>

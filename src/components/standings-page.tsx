@@ -1,6 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { fetchCurrentSeasonLeagueContext } from "@/lib/active-league";
 import { POSTSEASON_PERIOD, SEASON_PERIODS, type SeasonPeriodValue } from "@/lib/season-periods";
 import {
   buildSeasonSummaries,
@@ -9,13 +10,6 @@ import {
   type PeriodSummary,
   type SeasonHistoryManager,
 } from "@/lib/season-summary";
-
-type LeagueHistoryResponse = {
-  season: number;
-  managers: SeasonHistoryManager[];
-};
-
-const TARGET_SEASON = 2025;
 
 function getPeriodOptions() {
   return [
@@ -36,6 +30,7 @@ function formatRecord(wins: number, losses: number, pushes: number) {
 
 export default function StandingsPage() {
   const [selectedPeriod, setSelectedPeriod] = useState<SeasonPeriodValue>("postseason");
+  const [season, setSeason] = useState<number | null>(null);
   const [loading, setLoading] = useState(true);
   const [message, setMessage] = useState<string | null>(null);
   const [managers, setManagers] = useState<SeasonHistoryManager[]>([]);
@@ -46,15 +41,11 @@ export default function StandingsPage() {
     setMessage(null);
 
     try {
-      const historyResponse = await fetch(`/api/league-history?season=${TARGET_SEASON}`);
-      if (!historyResponse.ok) {
-        throw new Error("Unable to load league history.");
-      }
-
-      const historyPayload = (await historyResponse.json()) as LeagueHistoryResponse;
-      const historyManagers = Array.isArray(historyPayload.managers) ? historyPayload.managers : [];
+      const context = await fetchCurrentSeasonLeagueContext();
+      const historyManagers = context.managers;
+      setSeason(context.season);
       setManagers(historyManagers);
-      const periodPayloads = await fetchSeasonPeriodPayloads(TARGET_SEASON);
+      const periodPayloads = await fetchSeasonPeriodPayloads(context.season);
       const summaries = buildSeasonSummaries(historyManagers, periodPayloads);
       setPeriodSummaries(summaries.periodSummaries);
     } catch (error) {
@@ -113,7 +104,7 @@ export default function StandingsPage() {
         <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
           <div>
             <p className="text-sm font-semibold uppercase tracking-[0.3em] text-emerald-400">Standings</p>
-            <h2 className="mt-2 text-3xl font-semibold text-white">League leaderboards</h2>
+            <h2 className="mt-2 text-3xl font-semibold text-white">League leaderboards{season ? ` - ${season}` : ""}</h2>
             <p className="mt-3 max-w-2xl text-sm leading-7 text-slate-300">
               Review each manager&apos;s score for the selected period plus their cumulative record and points
               from Week 0 through that period.
@@ -179,7 +170,7 @@ export default function StandingsPage() {
                     <td className="rounded-l-xl border border-white/10 bg-slate-950/70 px-4 py-3">
                       <p className="font-semibold text-white">{entry.manager.displayName}</p>
                       <p className="mt-1 text-xs uppercase tracking-[0.2em] text-slate-400">
-                        2025 Rank #{entry.manager.finalRank}
+                        Draft Pos #{entry.manager.finalRank}
                       </p>
                     </td>
                     <td className="border border-white/10 bg-slate-950/70 px-4 py-3 text-white">

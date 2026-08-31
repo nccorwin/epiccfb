@@ -1,6 +1,7 @@
 'use client';
 
 import { type DragEvent, type FormEvent, useEffect, useMemo, useState } from "react";
+import { selectActiveLeague } from "@/lib/active-league";
 import { findLikelyManagerMatch } from "@/lib/manager-name-match";
 import {
   getMaxSlotCount,
@@ -34,6 +35,8 @@ type LeagueUser = {
 type League = {
   id: string;
   name: string;
+  createdAt?: string | null;
+  season?: { year: number } | null;
   settings?: {
     draftStatus?: string;
     currentPickStartedAt?: string | null;
@@ -150,7 +153,7 @@ export default function DraftPage({ currentUser }: { currentUser: DraftPageUser 
         throw new Error("Unable to load the league.");
       }
       const leaguePayload = await leagueResponse.json();
-      const activeLeague = (Array.isArray(leaguePayload) ? leaguePayload[0] : null) as League | null;
+      const activeLeague = selectActiveLeague(Array.isArray(leaguePayload) ? (leaguePayload as League[]) : []);
       if (!activeLeague) {
         throw new Error("No active league was found.");
       }
@@ -617,6 +620,60 @@ export default function DraftPage({ currentUser }: { currentUser: DraftPageUser 
       timeZoneName: "short",
     })
     : null;
+  const draftBoardSection = (
+    <section className="overflow-hidden rounded-3xl border border-white/10 bg-slate-900/80 shadow-2xl shadow-black/30">
+      <div className="border-b border-white/10 bg-slate-950/60 px-6 py-5">
+        <h3 className="text-xl font-semibold text-white">Draft board</h3>
+        <p className="mt-2 text-sm text-slate-400">Rows represent rounds and columns represent the draft order.</p>
+      </div>
+      {loading ? (
+        <div className="p-6 text-sm text-slate-400">Loading draft board...</div>
+      ) : (
+        <div className="overflow-x-auto p-6">
+          <table className="min-w-full border-separate border-spacing-y-2 text-sm text-slate-200">
+            <thead>
+              <tr>
+                <th className="rounded-l-xl border border-white/10 bg-white/5 px-4 py-3 text-left">Round</th>
+                {sortedMembers.map((entry) => (
+                  <th key={entry.user.id} className="border border-white/10 bg-white/5 px-4 py-3 text-left">
+                    {entry.user.name ?? entry.user.email}
+                  </th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {Array.from({ length: roundCount }).map((_, roundIndex) => {
+                const round = roundIndex + 1;
+                return (
+                  <tr key={round}>
+                    <td className="rounded-l-xl border border-white/10 bg-slate-950/70 px-4 py-3 font-medium text-white">
+                      {round}
+                    </td>
+                    {sortedMembers.map((entry) => {
+                      const pick = pickByRoundAndUserId.get(`${round}-${entry.user.id}`);
+                      const isActiveCell =
+                        activePickOwner?.user.id === entry.user.id &&
+                        draftStatus === "IN_PROGRESS" &&
+                        !draftIsComplete &&
+                        Math.floor(pickCount / Math.max(userCount, 1)) + 1 === round;
+                      return (
+                        <td
+                          key={`${round}-${entry.user.id}`}
+                          className={`border px-4 py-3 ${isActiveCell ? "border-emerald-400/40 bg-emerald-400/10" : "border-white/10 bg-slate-950/70"}`}
+                        >
+                          {pick?.team ? `${pick.team.name}` : "—"}
+                        </td>
+                      );
+                    })}
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
+      )}
+    </section>
+  );
 
   return (
     <div className="space-y-6">
@@ -664,6 +721,8 @@ export default function DraftPage({ currentUser }: { currentUser: DraftPageUser 
           </div>
         </section>
       ) : null}
+
+      {draftIsComplete ? draftBoardSection : null}
 
       <div className="grid gap-6 xl:grid-cols-[1.2fr_0.8fr]">
         <section className="rounded-3xl border border-white/10 bg-slate-900/80 p-6 shadow-2xl shadow-black/30">
@@ -881,58 +940,7 @@ export default function DraftPage({ currentUser }: { currentUser: DraftPageUser 
         </section>
       </div>
 
-      <section className="overflow-hidden rounded-3xl border border-white/10 bg-slate-900/80 shadow-2xl shadow-black/30">
-        <div className="border-b border-white/10 bg-slate-950/60 px-6 py-5">
-          <h3 className="text-xl font-semibold text-white">Draft board</h3>
-          <p className="mt-2 text-sm text-slate-400">Rows represent rounds and columns represent the draft order.</p>
-        </div>
-        {loading ? (
-          <div className="p-6 text-sm text-slate-400">Loading draft board...</div>
-        ) : (
-          <div className="overflow-x-auto p-6">
-            <table className="min-w-full border-separate border-spacing-y-2 text-sm text-slate-200">
-              <thead>
-                <tr>
-                  <th className="rounded-l-xl border border-white/10 bg-white/5 px-4 py-3 text-left">Round</th>
-                  {sortedMembers.map((entry) => (
-                    <th key={entry.user.id} className="border border-white/10 bg-white/5 px-4 py-3 text-left">
-                      {entry.user.name ?? entry.user.email}
-                    </th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody>
-                {Array.from({ length: roundCount }).map((_, roundIndex) => {
-                  const round = roundIndex + 1;
-                  return (
-                    <tr key={round}>
-                      <td className="rounded-l-xl border border-white/10 bg-slate-950/70 px-4 py-3 font-medium text-white">
-                        {round}
-                      </td>
-                      {sortedMembers.map((entry) => {
-                        const pick = pickByRoundAndUserId.get(`${round}-${entry.user.id}`);
-                        const isActiveCell =
-                          activePickOwner?.user.id === entry.user.id &&
-                          draftStatus === "IN_PROGRESS" &&
-                          !draftIsComplete &&
-                          Math.floor(pickCount / Math.max(userCount, 1)) + 1 === round;
-                        return (
-                          <td
-                            key={`${round}-${entry.user.id}`}
-                            className={`border px-4 py-3 ${isActiveCell ? "border-emerald-400/40 bg-emerald-400/10" : "border-white/10 bg-slate-950/70"}`}
-                          >
-                            {pick?.team ? `${pick.team.name}` : "—"}
-                          </td>
-                        );
-                      })}
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          </div>
-        )}
-      </section>
+      {!draftIsComplete ? draftBoardSection : null}
     </div>
   );
 }
