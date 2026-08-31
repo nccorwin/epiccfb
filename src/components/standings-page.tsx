@@ -2,7 +2,8 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { fetchCurrentSeasonLeagueContext } from "@/lib/active-league";
-import { POSTSEASON_PERIOD, SEASON_PERIODS, type SeasonPeriodValue } from "@/lib/season-periods";
+import { CURRENT_SEASON } from "@/lib/current-season";
+import { POSTSEASON_PERIOD, SEASON_PERIODS, getCurrentSeasonPeriod, type SeasonPeriodValue } from "@/lib/season-periods";
 import {
   buildSeasonSummaries,
   fetchSeasonPeriodPayloads,
@@ -29,7 +30,7 @@ function formatRecord(wins: number, losses: number, pushes: number) {
 }
 
 export default function StandingsPage() {
-  const [selectedPeriod, setSelectedPeriod] = useState<SeasonPeriodValue>("postseason");
+  const [selectedPeriod, setSelectedPeriod] = useState<SeasonPeriodValue>(() => getCurrentSeasonPeriod(CURRENT_SEASON));
   const [season, setSeason] = useState<number | null>(null);
   const [loading, setLoading] = useState(true);
   const [message, setMessage] = useState<string | null>(null);
@@ -44,6 +45,7 @@ export default function StandingsPage() {
       const context = await fetchCurrentSeasonLeagueContext();
       const historyManagers = context.managers;
       setSeason(context.season);
+      setSelectedPeriod(getCurrentSeasonPeriod(context.season));
       setManagers(historyManagers);
       const periodPayloads = await fetchSeasonPeriodPayloads(context.season);
       const summaries = buildSeasonSummaries(historyManagers, periodPayloads);

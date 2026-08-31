@@ -7,22 +7,22 @@ const ROOT_DIR = path.join(__dirname, "..");
 const CACHE_DIR = path.join(ROOT_DIR, "data", "scoreboard");
 const DEFAULT_SEASON = 2026;
 const WEEK_DATE_RANGE_TEMPLATES = [
-  { week: 0, startMonthDay: "08-19", endMonthDay: "08-25" },
-  { week: 1, startMonthDay: "08-26", endMonthDay: "09-01" },
-  { week: 2, startMonthDay: "09-02", endMonthDay: "09-08" },
-  { week: 3, startMonthDay: "09-09", endMonthDay: "09-15" },
-  { week: 4, startMonthDay: "09-16", endMonthDay: "09-22" },
-  { week: 5, startMonthDay: "09-23", endMonthDay: "09-29" },
-  { week: 6, startMonthDay: "09-30", endMonthDay: "10-06" },
-  { week: 7, startMonthDay: "10-07", endMonthDay: "10-13" },
-  { week: 8, startMonthDay: "10-14", endMonthDay: "10-20" },
-  { week: 9, startMonthDay: "10-21", endMonthDay: "10-27" },
-  { week: 10, startMonthDay: "10-28", endMonthDay: "11-03" },
-  { week: 11, startMonthDay: "11-04", endMonthDay: "11-10" },
-  { week: 12, startMonthDay: "11-11", endMonthDay: "11-17" },
-  { week: 13, startMonthDay: "11-18", endMonthDay: "11-24" },
-  { week: 14, startMonthDay: "11-25", endMonthDay: "12-01" },
-  { week: 15, startMonthDay: "12-02", endMonthDay: "12-08" },
+  { week: 0, startMonthDay: "08-25", endMonthDay: "08-31" },
+  { week: 1, startMonthDay: "09-01", endMonthDay: "09-07" },
+  { week: 2, startMonthDay: "09-08", endMonthDay: "09-14" },
+  { week: 3, startMonthDay: "09-15", endMonthDay: "09-21" },
+  { week: 4, startMonthDay: "09-22", endMonthDay: "09-28" },
+  { week: 5, startMonthDay: "09-29", endMonthDay: "10-05" },
+  { week: 6, startMonthDay: "10-06", endMonthDay: "10-12" },
+  { week: 7, startMonthDay: "10-13", endMonthDay: "10-19" },
+  { week: 8, startMonthDay: "10-20", endMonthDay: "10-26" },
+  { week: 9, startMonthDay: "10-27", endMonthDay: "11-02" },
+  { week: 10, startMonthDay: "11-03", endMonthDay: "11-09" },
+  { week: 11, startMonthDay: "11-10", endMonthDay: "11-16" },
+  { week: 12, startMonthDay: "11-17", endMonthDay: "11-23" },
+  { week: 13, startMonthDay: "11-24", endMonthDay: "11-30" },
+  { week: 14, startMonthDay: "12-01", endMonthDay: "12-07" },
+  { week: 15, startMonthDay: "12-08", endMonthDay: "12-14" },
 ];
 
 function buildWeekDateRanges(season) {

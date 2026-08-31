@@ -2,10 +2,11 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { fetchCurrentSeasonLeagueContext } from "@/lib/active-league";
+import { CURRENT_SEASON } from "@/lib/current-season";
 import { calculateTeamGamePoints } from "@/lib/scoring";
 import { calculateGameBonusPoints, calculatePostseasonGameBonusPoints, createPostseasonBonusTracker } from "@/lib/game-bonus";
 import { canonicalizeTeamName } from "@/lib/team-name";
-import { getSeasonPeriodLabel, POSTSEASON_PERIOD, SEASON_PERIODS, type SeasonPeriodValue } from "@/lib/season-periods";
+import { getCurrentSeasonPeriod, getSeasonPeriodLabel, POSTSEASON_PERIOD, SEASON_PERIODS, type SeasonPeriodValue } from "@/lib/season-periods";
 import type { SeasonHistoryManager } from "@/lib/season-summary";
 
 type GameResult = {
@@ -203,7 +204,7 @@ export default function ScoreboardPage() {
   const [cfpMatchupInfo, setCfpMatchupInfo] = useState<CfpMatchupInfo[]>([]);
   const [cfpGameIds, setCfpGameIds] = useState<number[]>([]);
   const [priorFcsFirstRoundTeams, setPriorFcsFirstRoundTeams] = useState<string[]>([]);
-  const [selectedView, setSelectedView] = useState<SeasonPeriodValue>("postseason");
+  const [selectedView, setSelectedView] = useState<SeasonPeriodValue>(() => getCurrentSeasonPeriod(CURRENT_SEASON));
   const [loading, setLoading] = useState(true);
   const [message, setMessage] = useState<string | null>(null);
 
