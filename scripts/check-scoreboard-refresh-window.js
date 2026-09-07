@@ -6,13 +6,28 @@ const chicagoFormatter = new Intl.DateTimeFormat("en-US", {
   hour12: false,
 });
 
-function isWeekendRefreshWindow(date) {
+const REFRESH_WINDOWS = [
+  { weekday: "Wed", hour: "00", minute: "00" },
+  { weekday: "Thu", hour: "21", minute: "00" },
+  { weekday: "Fri", hour: "01", minute: "00" },
+  { weekday: "Sat", hour: "14", minute: "30" },
+  { weekday: "Sat", hour: "18", minute: "30" },
+  { weekday: "Sat", hour: "23", minute: "00" },
+  { weekday: "Sun", hour: "03", minute: "00" },
+];
+
+function isScheduledRefreshWindow(date) {
   const parts = chicagoFormatter.formatToParts(date);
   const values = Object.fromEntries(parts.map((part) => [part.type, part.value]));
-  return (values.weekday === "Sat" || values.weekday === "Sun") && values.hour === "03" && values.minute === "00";
+  return REFRESH_WINDOWS.some(
+    (window) =>
+      values.weekday === window.weekday &&
+      values.hour === window.hour &&
+      values.minute === window.minute,
+  );
 }
 
-const shouldRefresh = isWeekendRefreshWindow(new Date());
+const shouldRefresh = isScheduledRefreshWindow(new Date());
 const output = `should_refresh=${shouldRefresh ? "true" : "false"}\n`;
 
 if (process.env.GITHUB_OUTPUT) {
@@ -22,5 +37,5 @@ if (process.env.GITHUB_OUTPUT) {
 }
 
 if (!shouldRefresh) {
-  console.log("Outside the 3am America/Chicago refresh window; skipping cache refresh.");
+  console.log("Outside configured America/Chicago refresh windows; skipping cache refresh.");
 }
