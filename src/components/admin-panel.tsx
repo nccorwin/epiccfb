@@ -7,6 +7,41 @@ type TeamInfo = { id: string; name: string; shortName: string | null; conference
 type UserInfo = { id: string; email: string; firstName: string | null; lastName: string | null; name: string | null; matchedEmail?: string | null };
 type LeagueMember = { id: string; userId: string; draftPosition: number | null; user: UserInfo };
 type LeagueInfo = { id: string; name: string; leagueUsers: LeagueMember[] };
+type SeasonDiagnosticManager = {
+  managerKey: string;
+  displayName: string;
+  userId: string | null;
+  cumulative: {
+    points: number;
+    wins: number;
+    losses: number;
+    pushes: number;
+    atsWins: number;
+    atsLosses: number;
+    atsPushes: number;
+  };
+  weeklyPointsByPeriod: Record<string, number>;
+  teams: Array<{
+    draftTeam: string;
+    canonicalizedTeam: string;
+    teamPoints: number;
+    record: {
+      wins: number;
+      losses: number;
+      pushes: number;
+      atsWins: number;
+      atsLosses: number;
+      atsPushes: number;
+    } | null;
+  }>;
+};
+
+type SeasonDiagnosticPayload = {
+  season: number;
+  leagueId: string;
+  generatedAt: string;
+  managers: SeasonDiagnosticManager[];
+};
 
 interface AdminPanelProps {
   leagues: LeagueInfo[];
@@ -566,6 +601,8 @@ function TeamOwnershipSection({ leagues, teams }: { leagues: LeagueInfo[]; teams
   const [toUserId, setToUserId] = useState("");
   const [pickupTeamId, setPickupTeamId] = useState("");
   const [saving, setSaving] = useState(false);
+  const [loadingDiagnostic, setLoadingDiagnostic] = useState(false);
+  const [diagnostic, setDiagnostic] = useState<SeasonDiagnosticPayload | null>(null);
   const [feedback, setFeedback] = useState<{ type: "ok" | "err"; msg: string } | null>(null);
 
   const league = leagues.find((l) => l.id === selectedLeagueId);
@@ -576,6 +613,7 @@ function TeamOwnershipSection({ leagues, teams }: { leagues: LeagueInfo[]; teams
     setDropTeamId("");
     setToUserId("");
     setPickupTeamId("");
+    setDiagnostic(null);
     setFeedback(null);
   }
 
@@ -606,6 +644,23 @@ function TeamOwnershipSection({ leagues, teams }: { leagues: LeagueInfo[]; teams
       setFeedback({ type: "err", msg: err instanceof Error ? err.message : "Transfer failed." });
     } finally {
       setSaving(false);
+    }
+  }
+
+  async function loadDiagnostic() {
+    setLoadingDiagnostic(true);
+    setFeedback(null);
+    try {
+      const res = await fetch(`/api/admin/season-diagnostic?leagueId=${encodeURIComponent(selectedLeagueId)}`);
+      const data = await res.json();
+      if (!res.ok) {
+        throw new Error(data.error ?? "Unable to load season diagnostic.");
+      }
+      setDiagnostic(data as SeasonDiagnosticPayload);
+    } catch (err: unknown) {
+      setFeedback({ type: "err", msg: err instanceof Error ? err.message : "Unable to load season diagnostic." });
+    } finally {
+      setLoadingDiagnostic(false);
     }
   }
 
@@ -738,6 +793,78 @@ function TeamOwnershipSection({ leagues, teams }: { leagues: LeagueInfo[]; teams
       >
         {saving ? "Transferring…" : "Execute Transfer"}
       </button>
+
+      <div className="border-t border-white/10 pt-6 space-y-4">
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <div>
+            <h3 className="text-sm font-semibold uppercase tracking-wider text-emerald-400">Season ownership diagnostic</h3>
+            <p className="mt-1 text-sm text-slate-400">
+              Load the current-season ownership and scoring view used by standings to verify canonicalized team mapping and manager totals.
+            </p>
+          </div>
+          <button
+            onClick={loadDiagnostic}
+            disabled={loadingDiagnostic}
+            className="rounded-full bg-emerald-500 px-6 py-2 text-sm font-semibold text-slate-950 transition hover:bg-emerald-400 disabled:opacity-50"
+          >
+            {loadingDiagnostic ? "Loading diagnostic…" : "Load Season Diagnostic"}
+          </button>
+        </div>
+
+        {diagnostic ? (
+          <div className="space-y-4 rounded-xl border border-white/10 bg-slate-900/50 p-5">
+            <div className="text-sm text-slate-300">
+              <span className="font-semibold text-white">Season {diagnostic.season}</span>
+              <span className="ml-3 text-slate-400">Generated {new Date(diagnostic.generatedAt).toLocaleString()}</span>
+            </div>
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="border-b border-white/10 text-left text-xs uppercase tracking-widest text-slate-500">
+                    <th className="pb-3 pr-4">Manager</th>
+                    <th className="pb-3 pr-4 text-right">Points</th>
+                    <th className="pb-3 pr-4 text-right">Record</th>
+                    <th className="pb-3 pr-4 text-right">ATS</th>
+                    <th className="pb-3 pr-4">Weekly pts</th>
+                    <th className="pb-3">Teams</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {diagnostic.managers.map((manager) => (
+                    <tr key={manager.managerKey} className="border-b border-white/5 align-top">
+                      <td className="py-3 pr-4 font-medium text-white">{manager.displayName}</td>
+                      <td className="py-3 pr-4 text-right tabular-nums text-emerald-300">{manager.cumulative.points.toFixed(1)}</td>
+                      <td className="py-3 pr-4 text-right tabular-nums text-slate-300">
+                        {manager.cumulative.wins}-{manager.cumulative.losses}-{manager.cumulative.pushes}
+                      </td>
+                      <td className="py-3 pr-4 text-right tabular-nums text-slate-300">
+                        {manager.cumulative.atsWins}-{manager.cumulative.atsLosses}-{manager.cumulative.atsPushes}
+                      </td>
+                      <td className="py-3 pr-4 text-xs text-slate-400">
+                        {Object.entries(manager.weeklyPointsByPeriod)
+                          .sort(([left], [right]) => left.localeCompare(right, undefined, { numeric: true }))
+                          .map(([period, points]) => `${period}: ${points.toFixed(1)}`)
+                          .join(" | ")}
+                      </td>
+                      <td className="py-3 text-xs text-slate-300">
+                        <div className="space-y-2">
+                          {manager.teams.map((team) => (
+                            <div key={`${manager.managerKey}-${team.draftTeam}`}>
+                              <span className="font-semibold text-white">{team.draftTeam}</span>
+                              <span className="text-slate-500"> → {team.canonicalizedTeam}</span>
+                              <span className="ml-2 text-emerald-300">{team.teamPoints.toFixed(1)} pts</span>
+                            </div>
+                          ))}
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        ) : null}
+      </div>
 
       <div className="border-t border-white/10 pt-6">
         <AddTeamSection teams={teams} />

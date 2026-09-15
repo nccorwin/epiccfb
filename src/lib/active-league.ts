@@ -14,7 +14,7 @@ type LeagueUserSummary = {
 
 type LeagueSummary = {
   id: string;
-  createdAt?: string | null;
+  createdAt?: string | Date | null;
   season?: { year: number } | null;
   leagueUsers: LeagueUserSummary[];
 };
@@ -37,7 +37,7 @@ function getManagerDisplayName(user: LeagueUserSummary["user"]) {
   return fullName || user.name || user.email;
 }
 
-function sortLeaguesByRecency<T extends { season?: { year: number } | null; createdAt?: string | null }>(
+function sortLeaguesByRecency<T extends { season?: { year: number } | null; createdAt?: string | Date | null }>(
   left: T,
   right: T,
 ) {
@@ -46,12 +46,20 @@ function sortLeaguesByRecency<T extends { season?: { year: number } | null; crea
   if (rightSeason !== leftSeason) {
     return rightSeason - leftSeason;
   }
-  const rightCreatedAt = right.createdAt ? new Date(right.createdAt).getTime() : 0;
-  const leftCreatedAt = left.createdAt ? new Date(left.createdAt).getTime() : 0;
+  const rightCreatedAt = right.createdAt instanceof Date
+    ? right.createdAt.getTime()
+    : right.createdAt
+      ? new Date(right.createdAt).getTime()
+      : 0;
+  const leftCreatedAt = left.createdAt instanceof Date
+    ? left.createdAt.getTime()
+    : left.createdAt
+      ? new Date(left.createdAt).getTime()
+      : 0;
   return rightCreatedAt - leftCreatedAt;
 }
 
-export function selectActiveLeague<T extends { season?: { year: number } | null; createdAt?: string | null }>(
+export function selectActiveLeague<T extends { season?: { year: number } | null; createdAt?: string | Date | null }>(
   leagues: T[],
 ): T | null {
   if (!Array.isArray(leagues) || leagues.length === 0) {
