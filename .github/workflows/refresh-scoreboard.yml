@@ -1,0 +1,67 @@
+name: Refresh scoreboard cache
+
+on:
+  schedule:
+    # Run on a broad UTC cadence; the checked script gates execution to the
+    # exact America/Chicago windows so the schedule stays correct across DST.
+    - cron: "0,30 0,2,3,4,5,6,7,8,9,19,20,23 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: refresh-scoreboard-cache
+  cancel-in-progress: false
+
+jobs:
+  refresh-scoreboard:
+    runs-on: ubuntu-latest
+    env:
+      SCOREBOARD_SEASON: 2026
+      CFDB_API_KEY: ${{ secrets.CFDB_API_KEY }}
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.ref_name }}
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Check refresh window
+        id: refresh-window
+        run: node scripts/check-scoreboard-refresh-window.js
+
+      - name: Validate CFDB secret
+        if: github.event_name == 'workflow_dispatch' || steps.refresh-window.outputs.should_refresh == 'true'
+        run: |
+          if [ -z "$CFDB_API_KEY" ]; then
+            echo "CFDB_API_KEY GitHub secret is required for scoreboard refreshes." >&2
+            exit 1
+          fi
+
+      - name: Refresh scoreboard cache
+        if: github.event_name == 'workflow_dispatch' || steps.refresh-window.outputs.should_refresh == 'true'
+        run: npm run refresh:scoreboard-cache -- "$SCOREBOARD_SEASON"
+
+      - name: Commit refreshed scoreboard cache
+        if: github.event_name == 'workflow_dispatch' || steps.refresh-window.outputs.should_refresh == 'true'
+        run: |
+          if git diff --quiet -- data/scoreboard; then
+            echo "No scoreboard cache changes to commit."
+            exit 0
+          fi
+
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add data/scoreboard
+          git commit -m "Refresh 2026 scoreboard cache" -m "Automated scoreboard refresh run for the 2026 season." -m "Co-authored-by: Copilot <223556219+Copilot@users.noreply.github.com>"
+          git push origin HEAD:${{ github.ref_name }}

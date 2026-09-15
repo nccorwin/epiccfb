@@ -57,6 +57,8 @@ npm run db:seed
 - Store the `CFDB_API_KEY` securely in `.env`.
 - Configure `EMAIL_HOST`, `EMAIL_PORT`, `EMAIL_SECURE`, `EMAIL_USER`, `EMAIL_PASS`, and `EMAIL_FROM` to enable account verification emails.
 - Spread pushes should count as a half-point for both teams when implementing scoring.
+- The scheduled scoreboard refresh workflow in `.github/workflows/refresh-scoreboard.yml` requires a repository secret named `CFDB_API_KEY`.
+- The GitHub Actions workflow runs on a broad UTC cadence and uses `scripts/check-scoreboard-refresh-window.js` to refresh only at the configured America/Chicago windows.
 
 ## Learn More
 
