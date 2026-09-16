@@ -10,6 +10,9 @@ const TEAM_NAME_ALIASES: Record<string, string> = {
   california: "california",
   "fresno st": "fresno state",
   "fresno state": "fresno state",
+  hawaii: "hawaii",
+  "university of hawaii": "hawaii",
+  uh: "hawaii",
   "illinois st": "illinois state",
   "illinois state": "illinois state",
   "jacksonville state": "jacksonville state",
@@ -39,6 +42,10 @@ const TEAM_NAME_ALIASES: Record<string, string> = {
   "oregon state": "oregon state",
   "san jose state": "san jose state",
   sfa: "stephen f austin",
+  "se la": "southeastern louisiana",
+  "se louisiana": "southeastern louisiana",
+  "southeastern la": "southeastern louisiana",
+  "southeastern louisiana": "southeastern louisiana",
   "south dakota st": "south dakota state",
   "south dakota state": "south dakota state",
   "stephen f austin": "stephen f austin",
@@ -53,6 +60,9 @@ const TEAM_NAME_ALIASES: Record<string, string> = {
   "university of texas san antonio": "utsa",
   "washington st": "washington state",
   "washington state": "washington state",
+  "youngstown st": "youngstown state",
+  "youngstown state": "youngstown state",
+  ysu: "youngstown state",
 };
 
 function normalizeWhitespace(value: string) {
