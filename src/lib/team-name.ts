@@ -11,6 +11,7 @@ const TEAM_NAME_ALIASES: Record<string, string> = {
   "fresno st": "fresno state",
   "fresno state": "fresno state",
   hawaii: "hawaii",
+  "hawai i": "hawaii",
   "university of hawaii": "hawaii",
   uh: "hawaii",
   "illinois st": "illinois state",
