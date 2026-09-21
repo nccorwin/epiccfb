@@ -2,9 +2,23 @@ name: Refresh scoreboard cache
 
 on:
   schedule:
-    # Run on a broad UTC cadence; the checked script gates execution to the
-    # exact America/Chicago windows so the schedule stays correct across DST.
-    - cron: "0,30 0,2,3,4,5,6,7,8,9,19,20,23 * * *"
+    # Exact America/Chicago refresh windows, expressed in UTC. These entries cover
+    # both CDT (summer) and CST (winter) offsets so the job is triggered at the
+    # intended Central times without relying on a broad hourly sweep.
+    - cron: "0 5 * * 3"   # Wed 00:00 CT (CDT)
+    - cron: "0 2 * * 4"   # Thu 21:00 CT (CDT)
+    - cron: "0 6 * * 5"   # Fri 01:00 CT (CDT)
+    - cron: "30 19 * * 6" # Sat 14:30 CT (CDT)
+    - cron: "30 23 * * 6" # Sat 18:30 CT (CDT)
+    - cron: "0 4 * * 0"   # Sat 23:00 CT (CDT)
+    - cron: "0 8 * * 0"   # Sun 03:00 CT (CDT)
+    - cron: "0 6 * * 3"   # Wed 00:00 CT (CST)
+    - cron: "0 3 * * 4"   # Thu 21:00 CT (CST)
+    - cron: "0 7 * * 5"   # Fri 01:00 CT (CST)
+    - cron: "30 20 * * 6" # Sat 14:30 CT (CST)
+    - cron: "30 0 * * 0"  # Sat 18:30 CT (CST)
+    - cron: "0 5 * * 0"   # Sat 23:00 CT (CST)
+    - cron: "0 9 * * 0"   # Sun 03:00 CT (CST)
   workflow_dispatch:
 
 permissions:
@@ -65,3 +79,15 @@ jobs:
           git add data/scoreboard
           git commit -m "Refresh 2026 scoreboard cache" -m "Automated scoreboard refresh run for the 2026 season." -m "Co-authored-by: Copilot <223556219+Copilot@users.noreply.github.com>"
           git push origin HEAD:${{ github.ref_name }}
+
+      - name: Trigger Vercel deployment
+        if: github.event_name == 'workflow_dispatch' || steps.refresh-window.outputs.should_refresh == 'true'
+        env:
+          VERCEL_DEPLOY_HOOK_URL: ${{ secrets.VERCEL_DEPLOY_HOOK_URL }}
+        run: |
+          if [ -z "$VERCEL_DEPLOY_HOOK_URL" ]; then
+            echo "VERCEL_DEPLOY_HOOK_URL not configured; skipping Vercel redeploy."
+            exit 0
+          fi
+
+          curl -fsS -X POST "$VERCEL_DEPLOY_HOOK_URL"

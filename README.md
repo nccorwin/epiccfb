@@ -58,7 +58,8 @@ npm run db:seed
 - Configure `EMAIL_HOST`, `EMAIL_PORT`, `EMAIL_SECURE`, `EMAIL_USER`, `EMAIL_PASS`, and `EMAIL_FROM` to enable account verification emails.
 - Spread pushes should count as a half-point for both teams when implementing scoring.
 - The scheduled scoreboard refresh workflow in `.github/workflows/refresh-scoreboard.yml` requires a repository secret named `CFDB_API_KEY`.
-- The GitHub Actions workflow runs on a broad UTC cadence and uses `scripts/check-scoreboard-refresh-window.js` to refresh only at the configured America/Chicago windows.
+- If the app is deployed on Vercel, add a repository secret named `VERCEL_DEPLOY_HOOK_URL` with the Vercel deploy hook URL so the site redeploys after the scoreboard cache update.
+- The GitHub Actions workflow uses explicit UTC cron entries that map to the requested America/Chicago refresh windows and still validates the current Chicago time before refresh steps run.
 
 ## Learn More
 
