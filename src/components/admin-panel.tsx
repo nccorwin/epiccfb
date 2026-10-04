@@ -21,8 +21,16 @@ type SeasonDiagnosticManager = {
     atsPushes: number;
   };
   weeklyPointsByPeriod: Record<string, number>;
+  rosterMoves?: Array<{
+    dropTeam: string;
+    pickupTeam: string;
+    effectiveWeek: number;
+  }>;
+  currentTeams?: string[];
   teams: Array<{
     draftTeam: string;
+    acquiredWeek?: number | null;
+    droppedAfterWeek?: number | null;
     canonicalizedTeam: string;
     teamPoints: number;
     record: {

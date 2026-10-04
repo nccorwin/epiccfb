@@ -1,4 +1,5 @@
 import { CURRENT_SEASON } from "@/lib/current-season";
+import { getSeasonRedraftMoves } from "@/lib/season-redraft";
 import type { SeasonHistoryManager } from "@/lib/season-summary";
 
 type LeagueUserSummary = {
@@ -35,6 +36,89 @@ type DraftPickSummary = {
 function getManagerDisplayName(user: LeagueUserSummary["user"]) {
   const fullName = [user.firstName, user.lastName].filter(Boolean).join(" ").trim();
   return fullName || user.name || user.email;
+}
+
+function normalizeManagerName(name: string) {
+  return name.trim().toLowerCase().replace(/\s+/g, " ");
+}
+
+function applySeasonRedraftMoves(season: number, managerByUserId: Map<string, SeasonHistoryManager>) {
+  const redraftMoves = getSeasonRedraftMoves(season);
+  if (!redraftMoves.length) {
+    return;
+  }
+
+  const managers = Array.from(managerByUserId.values());
+  const managerByName = new Map<string, SeasonHistoryManager>();
+  for (const manager of managers) {
+    const fullName = [manager.firstName, manager.lastName].filter(Boolean).join(" ").trim();
+    managerByName.set(normalizeManagerName(manager.displayName), manager);
+    if (fullName) {
+      managerByName.set(normalizeManagerName(fullName), manager);
+    }
+  }
+
+  for (const manager of managers) {
+    const initialTeams = manager.teams.slice();
+    const activeTeams = manager.teams.slice();
+    const timeline = new Map<
+      string,
+      { teamName: string; acquiredWeek: number | null; droppedAfterWeek: number | null }
+    >();
+    for (const teamName of initialTeams) {
+      timeline.set(teamName.toLowerCase(), {
+        teamName,
+        acquiredWeek: null,
+        droppedAfterWeek: null,
+      });
+    }
+
+    const managerMoves = redraftMoves
+      .filter((move) => managerByName.get(normalizeManagerName(move.managerName))?.key === manager.key)
+      .sort((left, right) => left.effectiveWeek - right.effectiveWeek);
+
+    for (const move of managerMoves) {
+      const dropIndex = activeTeams.findIndex((team) => team.toLowerCase() === move.dropTeam.toLowerCase());
+      if (dropIndex >= 0) {
+        activeTeams.splice(dropIndex, 1);
+      }
+
+      const existingDrop = timeline.get(move.dropTeam.toLowerCase());
+      if (existingDrop) {
+        existingDrop.droppedAfterWeek = move.effectiveWeek - 1;
+      } else {
+        timeline.set(move.dropTeam.toLowerCase(), {
+          teamName: move.dropTeam,
+          acquiredWeek: null,
+          droppedAfterWeek: move.effectiveWeek - 1,
+        });
+      }
+
+      if (!activeTeams.some((team) => team.toLowerCase() === move.pickupTeam.toLowerCase())) {
+        activeTeams.push(move.pickupTeam);
+      }
+
+      const existingPickup = timeline.get(move.pickupTeam.toLowerCase());
+      if (existingPickup) {
+        existingPickup.acquiredWeek = existingPickup.acquiredWeek ?? move.effectiveWeek;
+      } else {
+        timeline.set(move.pickupTeam.toLowerCase(), {
+          teamName: move.pickupTeam,
+          acquiredWeek: move.effectiveWeek,
+          droppedAfterWeek: null,
+        });
+      }
+    }
+
+    manager.initialTeams = initialTeams;
+    manager.rosterMoves = managerMoves.map((move) => ({
+      dropTeam: move.dropTeam,
+      pickupTeam: move.pickupTeam,
+      effectiveWeek: move.effectiveWeek,
+    }));
+    manager.teamTimeline = Array.from(timeline.values());
+    manager.teams = activeTeams;
+  }
 }
 
 function sortLeaguesByRecency<T extends { season?: { year: number } | null; createdAt?: string | Date | null }>(
@@ -127,6 +211,8 @@ export function buildSeasonManagers(
       existingManager.teams.push(pick.team.name);
     }
   }
+
+  applySeasonRedraftMoves(season, managerByUserId);
 
   return Array.from(managerByUserId.values()).sort((left, right) => {
     if (left.finalRank !== right.finalRank) {

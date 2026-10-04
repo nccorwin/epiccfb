@@ -14,6 +14,17 @@ export type SeasonHistoryManager = {
   email: string | null;
   displayName: string;
   teams: string[];
+  initialTeams?: string[];
+  rosterMoves?: Array<{
+    dropTeam: string;
+    pickupTeam: string;
+    effectiveWeek: number;
+  }>;
+  teamTimeline?: Array<{
+    teamName: string;
+    acquiredWeek: number | null;
+    droppedAfterWeek: number | null;
+  }>;
 };
 
 export type GameResult = {
@@ -97,6 +108,7 @@ export type TeamSummary = {
 export type SeasonSummaryResult = {
   periodSummaries: Record<string, PeriodSummary[]>;
   teamSummaries: Record<string, TeamSummary>;
+  managerTeamSummaries: Record<string, Record<string, TeamSummary>>;
 };
 
 function normalizeTeamName(teamName: string) {
@@ -130,6 +142,40 @@ function createEmptyTeamSummary(): TeamSummary {
     atsPushes: 0,
     points: 0,
   };
+}
+
+function shouldApplyMoveForPeriod(period: SeasonPeriodValue, effectiveWeek: number) {
+  if (period === "postseason") {
+    return true;
+  }
+  return period >= effectiveWeek;
+}
+
+export function getOwnerByTeamForPeriod(
+  historyManagers: SeasonHistoryManager[],
+  period: SeasonPeriodValue,
+) {
+  const ownerByTeam = new Map<string, string>();
+  for (const manager of historyManagers) {
+    const initialTeams = manager.initialTeams ?? manager.teams;
+    for (const team of initialTeams) {
+      ownerByTeam.set(normalizeTeamName(team), manager.key);
+    }
+  }
+
+  for (const manager of historyManagers) {
+    const rosterMoves = manager.rosterMoves ?? [];
+    for (const move of rosterMoves) {
+      if (!shouldApplyMoveForPeriod(period, move.effectiveWeek)) {
+        continue;
+      }
+
+      ownerByTeam.delete(normalizeTeamName(move.dropTeam));
+      ownerByTeam.set(normalizeTeamName(move.pickupTeam), manager.key);
+    }
+  }
+
+  return ownerByTeam;
 }
 
 export async function fetchSeasonPeriodPayloads(season: number): Promise<SeasonPeriodPayload[]> {
@@ -169,13 +215,6 @@ export function buildSeasonSummaries(
   historyManagers: SeasonHistoryManager[],
   periodPayloads: SeasonPeriodPayload[],
 ): SeasonSummaryResult {
-  const ownerByTeam = new Map<string, string>();
-  for (const manager of historyManagers) {
-    for (const team of manager.teams) {
-      ownerByTeam.set(normalizeTeamName(team), manager.key);
-    }
-  }
-
   const managerTotals = new Map<string, {
     cumulativePoints: number;
     cumulativeWins: number;
@@ -186,6 +225,7 @@ export function buildSeasonSummaries(
     cumulativeAtsPushes: number;
   }>();
   const teamTotals: Record<string, TeamSummary> = {};
+  const managerTeamTotals: Record<string, Record<string, TeamSummary>> = {};
   const periodSummaries: Record<string, PeriodSummary[]> = {};
 
   const postseasonBonusTracker = createPostseasonBonusTracker();
@@ -205,7 +245,12 @@ export function buildSeasonSummaries(
           cumulativeAtsPushes: 0,
         });
       }
+      if (!managerTeamTotals[manager.key]) {
+        managerTeamTotals[manager.key] = {};
+      }
     }
+
+    const ownerByTeam = getOwnerByTeamForPeriod(historyManagers, periodPayload.periodValue);
 
     const orderedGames = [...periodPayload.games].sort((left, right) => {
       const leftDate = left.startDate ? new Date(left.startDate).getTime() : 0;
@@ -318,6 +363,26 @@ export function buildSeasonSummaries(
             cumulative.cumulativeAtsLosses += 1;
           }
         }
+
+        if (!managerTeamTotals[homeOwnerKey][homeTeam]) {
+          managerTeamTotals[homeOwnerKey][homeTeam] = createEmptyTeamSummary();
+        }
+        const managerTeamSummary = managerTeamTotals[homeOwnerKey][homeTeam];
+        if (isPush) {
+          managerTeamSummary.pushes += 1;
+        } else if (homeWin) {
+          managerTeamSummary.wins += 1;
+        } else {
+          managerTeamSummary.losses += 1;
+        }
+        managerTeamSummary.points += breakdown.home.totalPoints + bonusPoints.home;
+        if (breakdown.home.coverPoints === 1) {
+          managerTeamSummary.atsWins += 1;
+        } else if (breakdown.home.coverPoints === 0.5) {
+          managerTeamSummary.atsPushes += 1;
+        } else {
+          managerTeamSummary.atsLosses += 1;
+        }
       }
 
       if (awayOwnerKey) {
@@ -348,6 +413,26 @@ export function buildSeasonSummaries(
             cumulative.cumulativeAtsLosses += 1;
           }
         }
+
+        if (!managerTeamTotals[awayOwnerKey][awayTeam]) {
+          managerTeamTotals[awayOwnerKey][awayTeam] = createEmptyTeamSummary();
+        }
+        const managerTeamSummary = managerTeamTotals[awayOwnerKey][awayTeam];
+        if (isPush) {
+          managerTeamSummary.pushes += 1;
+        } else if (!homeWin) {
+          managerTeamSummary.wins += 1;
+        } else {
+          managerTeamSummary.losses += 1;
+        }
+        managerTeamSummary.points += breakdown.away.totalPoints + bonusPoints.away;
+        if (breakdown.away.coverPoints === 1) {
+          managerTeamSummary.atsWins += 1;
+        } else if (breakdown.away.coverPoints === 0.5) {
+          managerTeamSummary.atsPushes += 1;
+        } else {
+          managerTeamSummary.atsLosses += 1;
+        }
       }
     }
 
@@ -371,5 +456,6 @@ export function buildSeasonSummaries(
   return {
     periodSummaries,
     teamSummaries: teamTotals,
+    managerTeamSummaries: managerTeamTotals,
   };
 }

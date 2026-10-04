@@ -143,11 +143,19 @@ export async function GET(request: Request) {
     generatedAt: new Date().toISOString(),
     managers: managers.map((manager) => {
       const postseasonSummary = postseasonByManagerKey.get(manager.key) ?? null;
-      const teamDiagnostics = manager.teams.map((team) => {
-        const canonicalizedTeam = canonicalizeTeamName(team);
-        const teamSummary = summaries.teamSummaries[canonicalizedTeam] ?? null;
+      const managerTeams = manager.teamTimeline ?? manager.teams.map((teamName) => ({
+        teamName,
+        acquiredWeek: null,
+        droppedAfterWeek: null,
+      }));
+      const managerTeamSummaries = summaries.managerTeamSummaries[manager.key] ?? {};
+      const teamDiagnostics = managerTeams.map((teamEntry) => {
+        const canonicalizedTeam = canonicalizeTeamName(teamEntry.teamName);
+        const teamSummary = managerTeamSummaries[canonicalizedTeam] ?? summaries.teamSummaries[canonicalizedTeam] ?? null;
         return {
-          draftTeam: team,
+          draftTeam: teamEntry.teamName,
+          acquiredWeek: teamEntry.acquiredWeek,
+          droppedAfterWeek: teamEntry.droppedAfterWeek,
           canonicalizedTeam,
           teamPoints: teamSummary?.points ?? 0,
           record: teamSummary
@@ -169,6 +177,8 @@ export async function GET(request: Request) {
         userId: manager.userId,
         cumulative: toRecord(postseasonSummary),
         weeklyPointsByPeriod: perPeriodByManagerKey.get(manager.key) ?? {},
+        rosterMoves: manager.rosterMoves ?? [],
+        currentTeams: manager.teams,
         teams: teamDiagnostics,
       };
     }),

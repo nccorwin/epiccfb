@@ -61,6 +61,7 @@ export default function HomePage({
   const [seasonHistory, setSeasonHistory] = useState<SeasonHistoryManager[]>([]);
   const [periodSummaries, setPeriodSummaries] = useState<Record<string, PeriodSummary[]>>({});
   const [allTeamStats, setAllTeamStats] = useState<Record<string, TeamSummary>>({});
+  const [managerTeamStats, setManagerTeamStats] = useState<Record<string, Record<string, TeamSummary>>>({});
   const [latestCompletedPeriod, setLatestCompletedPeriod] = useState<SeasonPeriodValue | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -78,6 +79,7 @@ export default function HomePage({
       const summaries = buildSeasonSummaries(managers, periodPayloads);
       setPeriodSummaries(summaries.periodSummaries);
       setAllTeamStats(summaries.teamSummaries);
+      setManagerTeamStats(summaries.managerTeamSummaries);
       setLatestCompletedPeriod(getLatestCompletedPeriod(periodPayloads));
     } catch (loadError) {
       setError(loadError instanceof Error ? loadError.message : "Unable to load data.");
@@ -151,6 +153,7 @@ export default function HomePage({
   }, [currentUser.email, currentUser.firstName, currentUser.id, currentUser.lastName, currentUser.name, seasonHistory]);
 
   const myStats = me ? postseasonSummaryByManager.get(me.key) ?? null : null;
+  const myTeamStats = me ? managerTeamStats[me.key] ?? {} : {};
   const latestPeriodStatsByManager = useMemo(() => {
     if (latestCompletedPeriod == null) {
       return new Map<string, PeriodSummary>();
@@ -298,15 +301,31 @@ export default function HomePage({
           <p className="text-slate-400">No roster data found for your account in the current season draft.</p>
         ) : (
           <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-            {me.teams.map((teamName) => {
-              const key = normalizeTeamName(teamName);
-              const stats = allTeamStats[key];
+            {(me.teamTimeline ?? me.teams.map((teamName) => ({
+              teamName,
+              acquiredWeek: null,
+              droppedAfterWeek: null,
+            }))).map((teamEntry) => {
+              const key = normalizeTeamName(teamEntry.teamName);
+              const stats = myTeamStats[key] ?? allTeamStats[key];
               return (
                 <div
-                  key={teamName}
+                  key={`${teamEntry.teamName}-${teamEntry.acquiredWeek ?? "draft"}-${teamEntry.droppedAfterWeek ?? "active"}`}
                   className="flex flex-col gap-2 rounded-2xl border border-white/10 bg-slate-800/60 px-5 py-4"
                 >
-                  <p className="font-semibold text-white">{teamName}</p>
+                  <div className="flex flex-wrap items-center gap-2">
+                    <p className="font-semibold text-white">{teamEntry.teamName}</p>
+                    {teamEntry.droppedAfterWeek != null ? (
+                      <span className="rounded-full border border-rose-300/30 bg-rose-300/10 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-rose-200">
+                        Dropped after Week {teamEntry.droppedAfterWeek}
+                      </span>
+                    ) : null}
+                    {teamEntry.acquiredWeek != null ? (
+                      <span className="rounded-full border border-emerald-300/30 bg-emerald-300/10 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-emerald-200">
+                        Picked up after Week {Math.max(teamEntry.acquiredWeek - 1, 0)}
+                      </span>
+                    ) : null}
+                  </div>
                   <div className="flex flex-wrap gap-4 text-xs text-slate-400">
                     <span>
                       Record:{" "}

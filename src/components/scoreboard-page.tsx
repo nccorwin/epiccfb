@@ -7,7 +7,7 @@ import { calculateTeamGamePoints } from "@/lib/scoring";
 import { calculateGameBonusPoints, calculatePostseasonGameBonusPoints, createPostseasonBonusTracker } from "@/lib/game-bonus";
 import { canonicalizeTeamName } from "@/lib/team-name";
 import { getCurrentSeasonPeriod, getSeasonPeriodLabel, POSTSEASON_PERIOD, SEASON_PERIODS, type SeasonPeriodValue } from "@/lib/season-periods";
-import type { SeasonHistoryManager } from "@/lib/season-summary";
+import { getOwnerByTeamForPeriod, type SeasonHistoryManager } from "@/lib/season-summary";
 
 type GameResult = {
   id: number;
@@ -255,13 +255,16 @@ export default function ScoreboardPage() {
 
   const ownershipMap = useMemo(() => {
     const map = new Map<string, string>();
-    managers.forEach((mgr) => {
-      mgr.teams.forEach((team) => {
-        map.set(normalizeTeamName(team), mgr.displayName);
-      });
+    const managerNameByKey = new Map(managers.map((manager) => [manager.key, manager.displayName] as const));
+    const ownerByTeam = getOwnerByTeamForPeriod(managers, selectedView);
+    ownerByTeam.forEach((managerKey, teamKey) => {
+      const managerName = managerNameByKey.get(managerKey);
+      if (managerName) {
+        map.set(teamKey, managerName);
+      }
     });
     return map;
-  }, [managers]);
+  }, [managers, selectedView]);
 
   const postseasonItems = useMemo<PostseasonDisplayItem[]>(() => {
     const excludedCfpGameIds = new Set(cfpGameIds);
