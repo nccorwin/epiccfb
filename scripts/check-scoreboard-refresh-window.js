@@ -16,19 +16,44 @@ const REFRESH_WINDOWS = [
   { weekday: "Sun", hour: "03", minute: "00" },
 ];
 
-function isScheduledRefreshWindow(date) {
+const WINDOW_TOLERANCE_MINUTES = 10;
+
+function parseTimeParts(date) {
   const parts = chicagoFormatter.formatToParts(date);
-  const values = Object.fromEntries(parts.map((part) => [part.type, part.value]));
-  return REFRESH_WINDOWS.some(
-    (window) =>
-      values.weekday === window.weekday &&
-      values.hour === window.hour &&
-      values.minute === window.minute,
-  );
+  return Object.fromEntries(parts.map((part) => [part.type, part.value]));
 }
 
-const shouldRefresh = isScheduledRefreshWindow(new Date());
-const output = `should_refresh=${shouldRefresh ? "true" : "false"}\n`;
+function toMinutes(hour, minute) {
+  return Number(hour) * 60 + Number(minute);
+}
+
+function isScheduledRefreshWindow(date) {
+  const values = parseTimeParts(date);
+  const nowMinutes = toMinutes(values.hour, values.minute);
+
+  const matchedWindow = REFRESH_WINDOWS.find((window) => {
+    if (values.weekday !== window.weekday) {
+      return false;
+    }
+
+    const windowMinutes = toMinutes(window.hour, window.minute);
+    const delta = nowMinutes - windowMinutes;
+    return delta >= 0 && delta <= WINDOW_TOLERANCE_MINUTES;
+  });
+
+  return {
+    shouldRefresh: Boolean(matchedWindow),
+    matchedWindow,
+    current: values,
+  };
+}
+
+const evaluation = isScheduledRefreshWindow(new Date());
+const output = [
+  `should_refresh=${evaluation.shouldRefresh ? "true" : "false"}`,
+  `current_ct=${evaluation.current.weekday} ${evaluation.current.hour}:${evaluation.current.minute}`,
+  `window_tolerance_minutes=${WINDOW_TOLERANCE_MINUTES}`,
+].join("\n") + "\n";
 
 if (process.env.GITHUB_OUTPUT) {
   require("fs").appendFileSync(process.env.GITHUB_OUTPUT, output);
@@ -36,6 +61,10 @@ if (process.env.GITHUB_OUTPUT) {
   process.stdout.write(output);
 }
 
-if (!shouldRefresh) {
-  console.log("Outside configured America/Chicago refresh windows; skipping cache refresh.");
+if (!evaluation.shouldRefresh) {
+  console.log("Outside configured America/Chicago refresh windows (with tolerance); skipping cache refresh.");
+} else if (evaluation.matchedWindow) {
+  console.log(
+    `Matched refresh window ${evaluation.matchedWindow.weekday} ${evaluation.matchedWindow.hour}:${evaluation.matchedWindow.minute} CT.`,
+  );
 }
