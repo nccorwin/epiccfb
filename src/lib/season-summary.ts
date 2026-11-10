@@ -19,6 +19,7 @@ export type SeasonHistoryManager = {
     dropTeam: string;
     pickupTeam: string;
     effectiveWeek: number;
+    moveOrder?: number;
   }>;
   teamTimeline?: Array<{
     teamName: string;
@@ -163,16 +164,31 @@ export function getOwnerByTeamForPeriod(
     }
   }
 
-  for (const manager of historyManagers) {
-    const rosterMoves = manager.rosterMoves ?? [];
-    for (const move of rosterMoves) {
-      if (!shouldApplyMoveForPeriod(period, move.effectiveWeek)) {
-        continue;
+  const orderedMoves = historyManagers
+    .flatMap((manager) =>
+      (manager.rosterMoves ?? []).map((move) => ({
+        managerKey: manager.key,
+        move,
+      })),
+    )
+    .filter(({ move }) => shouldApplyMoveForPeriod(period, move.effectiveWeek))
+    .sort((left, right) => {
+      if (left.move.effectiveWeek !== right.move.effectiveWeek) {
+        return left.move.effectiveWeek - right.move.effectiveWeek;
       }
+      return (left.move.moveOrder ?? Number.MAX_SAFE_INTEGER) - (right.move.moveOrder ?? Number.MAX_SAFE_INTEGER);
+    });
 
-      ownerByTeam.delete(normalizeTeamName(move.dropTeam));
-      ownerByTeam.set(normalizeTeamName(move.pickupTeam), manager.key);
+  for (const { managerKey, move } of orderedMoves) {
+    const normalizedDropTeam = normalizeTeamName(move.dropTeam);
+    const normalizedPickupTeam = normalizeTeamName(move.pickupTeam);
+
+    // Only clear the dropped team if this manager is still its active owner.
+    if (ownerByTeam.get(normalizedDropTeam) === managerKey) {
+      ownerByTeam.delete(normalizedDropTeam);
     }
+
+    ownerByTeam.set(normalizedPickupTeam, managerKey);
   }
 
   return ownerByTeam;

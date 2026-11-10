@@ -9,5 +9,15 @@ export default async function ScoreboardRoutePage() {
     redirect("/login");
   }
 
-  return <ScoreboardPage />;
+  return (
+    <ScoreboardPage
+      currentUser={{
+        id: currentUser.id,
+        email: currentUser.email,
+        firstName: currentUser.firstName,
+        lastName: currentUser.lastName,
+        name: currentUser.name,
+      }}
+    />
+  );
 }

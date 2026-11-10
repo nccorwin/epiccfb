@@ -1,5 +1,5 @@
 import { CURRENT_SEASON } from "@/lib/current-season";
-import { getSeasonRedraftMoves } from "@/lib/season-redraft";
+import { getSeasonRedraftMoves, sortSeasonRedraftMoves } from "@/lib/season-redraft";
 import type { SeasonHistoryManager } from "@/lib/season-summary";
 
 type LeagueUserSummary = {
@@ -43,7 +43,7 @@ function normalizeManagerName(name: string) {
 }
 
 function applySeasonRedraftMoves(season: number, managerByUserId: Map<string, SeasonHistoryManager>) {
-  const redraftMoves = getSeasonRedraftMoves(season);
+  const redraftMoves = sortSeasonRedraftMoves(getSeasonRedraftMoves(season));
   if (!redraftMoves.length) {
     return;
   }
@@ -75,7 +75,12 @@ function applySeasonRedraftMoves(season: number, managerByUserId: Map<string, Se
 
     const managerMoves = redraftMoves
       .filter((move) => managerByName.get(normalizeManagerName(move.managerName))?.key === manager.key)
-      .sort((left, right) => left.effectiveWeek - right.effectiveWeek);
+      .sort((left, right) => {
+        if (left.effectiveWeek !== right.effectiveWeek) {
+          return left.effectiveWeek - right.effectiveWeek;
+        }
+        return left.moveOrder - right.moveOrder;
+      });
 
     for (const move of managerMoves) {
       const dropIndex = activeTeams.findIndex((team) => team.toLowerCase() === move.dropTeam.toLowerCase());
@@ -115,6 +120,7 @@ function applySeasonRedraftMoves(season: number, managerByUserId: Map<string, Se
       dropTeam: move.dropTeam,
       pickupTeam: move.pickupTeam,
       effectiveWeek: move.effectiveWeek,
+      moveOrder: move.moveOrder,
     }));
     manager.teamTimeline = Array.from(timeline.values());
     manager.teams = activeTeams;

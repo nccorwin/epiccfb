@@ -8,6 +8,7 @@ import { calculateGameBonusPoints, calculatePostseasonGameBonusPoints, createPos
 import { canonicalizeTeamName } from "@/lib/team-name";
 import { getCurrentSeasonPeriod, getSeasonPeriodLabel, POSTSEASON_PERIOD, SEASON_PERIODS, type SeasonPeriodValue } from "@/lib/season-periods";
 import { getOwnerByTeamForPeriod, type SeasonHistoryManager } from "@/lib/season-summary";
+import { findLikelyManagerMatch } from "@/lib/manager-name-match";
 
 type GameResult = {
   id: number;
@@ -57,6 +58,14 @@ type PostseasonScoringResult = {
     home: number;
     away: number;
   };
+};
+
+type ScoreboardPageUser = {
+  id: string;
+  email: string;
+  firstName: string | null;
+  lastName: string | null;
+  name: string | null;
 };
 
 function normalizeTeamName(teamName: string) {
@@ -147,7 +156,7 @@ function GameCard({
             </div>
             <div className="text-right">
               <p className={`text-2xl font-semibold ${homeWon ? "text-emerald-300" : "text-white"}`}>
-                {game.completed ? game.homePoints : "â€”"}
+                {game.completed ? game.homePoints : "GÇö"}
               </p>
               {game.completed ? (
                 <p className="text-sm text-slate-400">
@@ -177,7 +186,7 @@ function GameCard({
             </div>
             <div className="text-right">
               <p className={`text-2xl font-semibold ${awayWon ? "text-emerald-300" : "text-white"}`}>
-                {game.completed ? game.awayPoints : "â€”"}
+                {game.completed ? game.awayPoints : "GÇö"}
               </p>
               {game.completed ? (
                 <p className="text-sm text-slate-400">
@@ -197,7 +206,7 @@ function GameCard({
   );
 }
 
-export default function ScoreboardPage() {
+export default function ScoreboardPage({ currentUser }: { currentUser: ScoreboardPageUser }) {
   const [season, setSeason] = useState<number | null>(null);
   const [managers, setManagers] = useState<SeasonHistoryManager[]>([]);
   const [games, setGames] = useState<GameResult[]>([]);
@@ -266,6 +275,39 @@ export default function ScoreboardPage() {
     return map;
   }, [managers, selectedView]);
 
+  const currentManager = useMemo(() => {
+    return findLikelyManagerMatch(
+      {
+        userId: currentUser.id,
+        email: currentUser.email,
+        firstName: currentUser.firstName,
+        lastName: currentUser.lastName,
+        displayName: currentUser.name,
+      },
+      managers.map((manager) => ({
+        ...manager,
+        userId: manager.userId,
+        email: manager.email,
+        firstName: manager.firstName,
+        lastName: manager.lastName,
+        displayName: manager.displayName,
+      })),
+    );
+  }, [currentUser.email, currentUser.firstName, currentUser.id, currentUser.lastName, currentUser.name, managers]);
+
+  const prioritizedTeamKeys = useMemo(() => {
+    if (!currentManager) {
+      return new Set<string>();
+    }
+
+    const ownerByTeam = getOwnerByTeamForPeriod(managers, selectedView);
+    return new Set(
+      Array.from(ownerByTeam.entries())
+        .filter(([, managerKey]) => managerKey === currentManager.key)
+        .map(([teamKey]) => teamKey),
+    );
+  }, [currentManager, managers, selectedView]);
+
   const postseasonItems = useMemo<PostseasonDisplayItem[]>(() => {
     const excludedCfpGameIds = new Set(cfpGameIds);
     const regularGames = games
@@ -311,6 +353,51 @@ export default function ScoreboardPage() {
       return `${a.homeTeam} ${a.awayTeam}`.localeCompare(`${b.homeTeam} ${b.awayTeam}`);
     });
   }, [filteredGames]);
+
+  const prioritizedSortedGames = useMemo(() => {
+    if (!prioritizedTeamKeys.size) {
+      return sortedGames;
+    }
+
+    const prioritized: GameResult[] = [];
+    const remaining: GameResult[] = [];
+    for (const game of sortedGames) {
+      const hasMyTeam =
+        prioritizedTeamKeys.has(normalizeTeamName(game.homeTeam)) ||
+        prioritizedTeamKeys.has(normalizeTeamName(game.awayTeam));
+      if (hasMyTeam) {
+        prioritized.push(game);
+      } else {
+        remaining.push(game);
+      }
+    }
+
+    return [...prioritized, ...remaining];
+  }, [prioritizedTeamKeys, sortedGames]);
+
+  const prioritizedPostseasonItems = useMemo(() => {
+    if (!prioritizedTeamKeys.size) {
+      return postseasonItems;
+    }
+
+    const prioritized: PostseasonDisplayItem[] = [];
+    const remaining: PostseasonDisplayItem[] = [];
+    for (const item of postseasonItems) {
+      const homeTeam = item.kind === "game" ? item.game.homeTeam : item.matchup.homeTeam;
+      const awayTeam = item.kind === "game" ? item.game.awayTeam : item.matchup.awayTeam;
+      const hasMyTeam =
+        (homeTeam ? prioritizedTeamKeys.has(normalizeTeamName(homeTeam)) : false) ||
+        (awayTeam ? prioritizedTeamKeys.has(normalizeTeamName(awayTeam)) : false);
+
+      if (hasMyTeam) {
+        prioritized.push(item);
+      } else {
+        remaining.push(item);
+      }
+    }
+
+    return [...prioritized, ...remaining];
+  }, [postseasonItems, prioritizedTeamKeys]);
 
   const lineByGame = useMemo(() => {
     const map = new Map<string, LineResult>();
@@ -483,16 +570,16 @@ export default function ScoreboardPage() {
 
       {loading ? (
         <div className="rounded-3xl border border-white/10 bg-slate-900/80 p-10 text-center text-slate-400">
-          Loading {viewLabel}â€¦
+          Loading {viewLabel}GÇª
         </div>
       ) : isPostseason ? (
         <div className="space-y-4">
-          {postseasonItems.length === 0 ? (
+          {prioritizedPostseasonItems.length === 0 ? (
             <div className="rounded-3xl border border-white/10 bg-slate-900/80 p-10 text-center text-slate-400">
               No postseason games found for {viewLabel}.
             </div>
           ) : (
-            postseasonItems.map((item) => {
+            prioritizedPostseasonItems.map((item) => {
               if (item.kind === "cfp") {
                 const matchup = item.matchup;
                 const matchupLabel = matchup.roundName || "College Football Playoff";
@@ -529,7 +616,7 @@ export default function ScoreboardPage() {
                               </p>
                             </div>
                             <p className={`text-2xl font-semibold ${won ? "text-emerald-300" : "text-white"}`}>
-                              {matchup.completed ? pts : "â€”"}
+                              {matchup.completed ? pts : "GÇö"}
                             </p>
                           </div>
                           {matchup.completed ? (
@@ -574,17 +661,17 @@ export default function ScoreboardPage() {
           )}
         </div>
       ) : (
-        /* â”€â”€ Regular season or Bowls: flat sorted list â”€â”€ */
+        /* GöÇGöÇ Regular season or Bowls: flat sorted list GöÇGöÇ */
         <div className="space-y-4">
-          {sortedGames.length === 0 ? (
+          {prioritizedSortedGames.length === 0 ? (
             <div className="rounded-3xl border border-white/10 bg-slate-900/80 p-10 text-center text-slate-400">
               No FBS/FCS games found for {viewLabel}.
             </div>
           ) : (
             (() => {
               const rows: GameResult[][] = [];
-              for (let i = 0; i < sortedGames.length; i += 2) {
-                rows.push(sortedGames.slice(i, i + 2));
+              for (let i = 0; i < prioritizedSortedGames.length; i += 2) {
+                rows.push(prioritizedSortedGames.slice(i, i + 2));
               }
               return rows.map((row, rowIdx) => (
                 <div key={`row-${rowIdx}`} className="grid gap-4 xl:grid-cols-2">
