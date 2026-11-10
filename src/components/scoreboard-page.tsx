@@ -156,7 +156,7 @@ function GameCard({
             </div>
             <div className="text-right">
               <p className={`text-2xl font-semibold ${homeWon ? "text-emerald-300" : "text-white"}`}>
-                {game.completed ? game.homePoints : "GÇö"}
+                {game.completed ? game.homePoints : "Gï¿½ï¿½"}
               </p>
               {game.completed ? (
                 <p className="text-sm text-slate-400">
@@ -186,7 +186,7 @@ function GameCard({
             </div>
             <div className="text-right">
               <p className={`text-2xl font-semibold ${awayWon ? "text-emerald-300" : "text-white"}`}>
-                {game.completed ? game.awayPoints : "GÇö"}
+                {game.completed ? game.awayPoints : "Gï¿½ï¿½"}
               </p>
               {game.completed ? (
                 <p className="text-sm text-slate-400">
@@ -616,7 +616,7 @@ export default function ScoreboardPage({ currentUser }: { currentUser: Scoreboar
                               </p>
                             </div>
                             <p className={`text-2xl font-semibold ${won ? "text-emerald-300" : "text-white"}`}>
-                              {matchup.completed ? pts : "GÇö"}
+                              {matchup.completed ? pts : "Gï¿½ï¿½"}
                             </p>
                           </div>
                           {matchup.completed ? (
@@ -661,7 +661,7 @@ export default function ScoreboardPage({ currentUser }: { currentUser: Scoreboar
           )}
         </div>
       ) : (
-        /* GöÇGöÇ Regular season or Bowls: flat sorted list GöÇGöÇ */
+        /* Gï¿½ï¿½Gï¿½ï¿½ Regular season or Bowls: flat sorted list Gï¿½ï¿½Gï¿½ï¿½ */
         <div className="space-y-4">
           {prioritizedSortedGames.length === 0 ? (
             <div className="rounded-3xl border border-white/10 bg-slate-900/80 p-10 text-center text-slate-400">
