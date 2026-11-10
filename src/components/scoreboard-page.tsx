@@ -72,6 +72,38 @@ function normalizeTeamName(teamName: string) {
   return canonicalizeTeamName(teamName);
 }
 
+function convertEtLabelToCt(label: string) {
+  return label
+    .replace(/\bET\b/gi, "CT")
+    .replace(/\bEastern Time\b/gi, "Central Time");
+}
+
+function formatKickoffTimeCt(startDate: string) {
+  const kickoff = new Date(startDate);
+  if (Number.isNaN(kickoff.getTime())) {
+    return "Kickoff TBD";
+  }
+
+  return `${kickoff.toLocaleTimeString("en-US", {
+    timeZone: "America/Chicago",
+    hour: "numeric",
+    minute: "2-digit",
+  })} CT`;
+}
+
+function getGameBadgeLabel(game: GameResult) {
+  if (game.completed) {
+    return game.notes ?? "Final";
+  }
+
+  const note = game.notes?.trim();
+  if (note && note.toLowerCase() !== "scheduled") {
+    return convertEtLabelToCt(note);
+  }
+
+  return formatKickoffTimeCt(game.startDate);
+}
+
 function getPostseasonItemKey(item: PostseasonDisplayItem) {
   return item.kind === "game"
     ? `game-${item.game.id}`
@@ -123,7 +155,7 @@ function GameCard({
 
   const homeWon = game.completed && game.homePoints != null && game.awayPoints != null && game.homePoints > game.awayPoints;
   const awayWon = game.completed && game.homePoints != null && game.awayPoints != null && game.awayPoints > game.homePoints;
-  const gameLabel = game.notes ?? (game.completed ? "Final" : "Scheduled");
+  const gameLabel = getGameBadgeLabel(game);
 
   return (
     <div className="rounded-3xl border border-white/10 bg-slate-900/80 p-6 shadow-xl shadow-black/20">
@@ -156,7 +188,7 @@ function GameCard({
             </div>
             <div className="text-right">
               <p className={`text-2xl font-semibold ${homeWon ? "text-emerald-300" : "text-white"}`}>
-                {game.completed ? game.homePoints : "G��"}
+                {game.completed ? game.homePoints : "--"}
               </p>
               {game.completed ? (
                 <p className="text-sm text-slate-400">
@@ -186,7 +218,7 @@ function GameCard({
             </div>
             <div className="text-right">
               <p className={`text-2xl font-semibold ${awayWon ? "text-emerald-300" : "text-white"}`}>
-                {game.completed ? game.awayPoints : "G��"}
+                {game.completed ? game.awayPoints : "--"}
               </p>
               {game.completed ? (
                 <p className="text-sm text-slate-400">
@@ -616,7 +648,7 @@ export default function ScoreboardPage({ currentUser }: { currentUser: Scoreboar
                               </p>
                             </div>
                             <p className={`text-2xl font-semibold ${won ? "text-emerald-300" : "text-white"}`}>
-                              {matchup.completed ? pts : "G��"}
+                              {matchup.completed ? pts : "--"}
                             </p>
                           </div>
                           {matchup.completed ? (
